@@ -159,8 +159,9 @@ const INITIAL_TRADES = [
     tokenSymbol: "EURC",
     usdcAmount: "9.3200",
     time: "1m ago",
-    hash: "0x3a1b...9c2d",
-    fullHash: "0x3a1b2c3d4e5f67890123456789abcdef0123456789abcdef01234567899c2d"
+    // Using a real transaction hash provided by user for demonstration
+    hash: "0x0929...3e31",
+    fullHash: "0x092971a645209be2b43dcfff24733e477cddcbc0029354236a2d91054bd93e31"
   },
   {
     trader: "0xeca1...0347",
