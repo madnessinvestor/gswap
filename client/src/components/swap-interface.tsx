@@ -149,7 +149,7 @@ const CHART_DATA = [
 ];
 
 // Mock Trade History
-const RECENT_TRADES = [
+const INITIAL_TRADES = [
   { hash: "0x44cb...7e7f", type: "Buy", amountIn: "5.0000", tokenIn: "USDC", amountOut: "0.6574", tokenOut: "EURC", time: "13m ago" },
   { hash: "0x8a21...9b3c", type: "Sell", amountIn: "10.0000", tokenIn: "EURC", amountOut: "76.0550", tokenOut: "USDC", time: "15m ago" },
   { hash: "0x1d4f...2e8a", type: "Buy", amountIn: "100.0000", tokenIn: "USDC", amountOut: "13.1483", tokenOut: "EURC", time: "22m ago" },
@@ -169,6 +169,7 @@ export default function SwapInterface() {
   const [slippage, setSlippage] = useState("0.5");
   const [balances, setBalances] = useState({ USDC: "0.00", EURC: "0.00" });
   const [needsApproval, setNeedsApproval] = useState(false);
+  const [trades, setTrades] = useState(INITIAL_TRADES);
 
   // Initialize Viem Client
   const getWalletClient = () => {
@@ -338,50 +339,6 @@ export default function SwapInterface() {
     setOutputAmount((num * rate).toFixed(4));
   }, [inputAmount, fromToken, toToken]);
 
-
-  // TradingView Widget Script
-  useEffect(() => {
-    const container = document.getElementById('tradingview_chart');
-    if (!container) return;
-
-    // Clean up previous script if any
-    const existingScript = document.getElementById('tv-script');
-    if (existingScript) existingScript.remove();
-
-    const script = document.createElement('script');
-    script.id = 'tv-script';
-    script.src = 'https://s3.tradingview.com/tv.js';
-    script.async = true;
-    script.onload = () => {
-      if ((window as any).TradingView) {
-        new (window as any).TradingView.widget({
-          "autosize": true,
-          "symbol": "FX:EURUSD",
-          "interval": "D",
-          "timezone": "Etc/UTC",
-          "theme": "dark",
-          "style": "1",
-          "locale": "en",
-          "enable_publishing": false,
-          "allow_symbol_change": true,
-          "container_id": "tradingview_chart",
-          "hide_side_toolbar": false,
-          "backgroundColor": "rgba(0, 0, 0, 0)",
-          "gridColor": "rgba(42, 46, 57, 0.2)"
-        });
-      }
-    };
-    document.head.appendChild(script);
-
-    return () => {
-        // Cleanup if component unmounts
-        const s = document.getElementById('tv-script');
-        if (s) s.remove();
-        // We can't easily destroy the widget instance but we can clean the container
-        if (container) container.innerHTML = '';
-    };
-  }, []);
-
   const handleApprove = async () => {
       const client = getWalletClient();
       if (!client || !account) return;
@@ -463,6 +420,19 @@ export default function SwapInterface() {
               setInputAmount("");
               setOutputAmount("");
               fetchBalances(account);
+              
+              // Add to trades
+              const newTrade = {
+                hash: `${hash.slice(0,6)}...${hash.slice(-4)}`,
+                type: fromToken.symbol === 'USDC' ? 'Buy' : 'Sell',
+                amountIn: parseFloat(inputAmount).toFixed(4),
+                tokenIn: fromToken.symbol,
+                amountOut: parseFloat(outputAmount).toFixed(4),
+                tokenOut: toToken.symbol,
+                time: "Just now"
+              };
+              setTrades(prev => [newTrade, ...prev]);
+
               toast({ title: "Swap Successful", description: "Balances updated." });
           }, 5000);
 
@@ -748,7 +718,77 @@ export default function SwapInterface() {
         {/* Right Column (Chart + History) */}
         <div className="lg:col-span-7 order-2 flex flex-col gap-6">
             <Card className="w-full min-h-[500px] bg-card/50 backdrop-blur-md border-border/50 shadow-xl rounded-[24px] overflow-hidden flex flex-col">
-                 <div id="tradingview_chart" className="w-full h-[500px] flex-1" />
+                 <div className="p-6 border-b border-border/50 bg-card/30 flex justify-between items-center">
+                   <div>
+                     <div className="flex items-baseline gap-2">
+                       <h2 className="text-3xl font-bold text-foreground">1.00 EURC</h2>
+                       <span className="text-sm text-muted-foreground"> = 7.6055 USDC</span>
+                     </div>
+                     <div className="flex items-center gap-2 mt-1">
+                       <span className="text-sm font-medium text-red-500 flex items-center gap-1">
+                         <ArrowDown className="w-3 h-3" /> -0.32 (4.15%)
+                       </span>
+                       <span className="text-xs text-muted-foreground">Past 24 Hours</span>
+                     </div>
+                   </div>
+                   <div className="flex gap-2">
+                     {["1H", "1D", "1W", "1M", "1Y"].map(period => (
+                       <Button 
+                        key={period} 
+                        variant="ghost" 
+                        size="sm" 
+                        className={`h-8 px-3 rounded-lg text-xs font-semibold ${period === '1D' ? 'bg-secondary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                       >
+                         {period}
+                       </Button>
+                     ))}
+                   </div>
+                 </div>
+                 
+                 <div className="flex-1 w-full min-h-[350px] p-4 relative">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={CHART_DATA}>
+                        <defs>
+                          <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <XAxis 
+                          dataKey="time" 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#6B7280', fontSize: 12 }}
+                          dy={10}
+                        />
+                        <YAxis 
+                          domain={['dataMin - 0.1', 'dataMax + 0.1']} 
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: '#6B7280', fontSize: 12 }}
+                          dx={-10}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'rgba(17, 24, 39, 0.9)', 
+                            border: '1px solid rgba(75, 85, 99, 0.4)',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }}
+                          itemStyle={{ color: '#fff' }}
+                          labelStyle={{ color: '#9CA3AF', marginBottom: '4px' }}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="price" 
+                          stroke="#ef4444" 
+                          strokeWidth={3}
+                          fillOpacity={1} 
+                          fill="url(#colorPrice)" 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                 </div>
             </Card>
 
             {/* Trade History */}
@@ -768,7 +808,7 @@ export default function SwapInterface() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
-                        {RECENT_TRADES.map((trade, i) => (
+                        {trades.map((trade, i) => (
                         <tr key={i} className="hover:bg-secondary/20 transition-colors">
                             <td className="px-5 py-3 font-mono text-primary flex items-center gap-1.5">
                                 {trade.hash} <ExternalLink className="w-3 h-3 opacity-50" />
