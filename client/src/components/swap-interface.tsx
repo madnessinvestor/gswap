@@ -188,21 +188,25 @@ export default function SwapInterface() {
 
     try {
       // 1. Fetch Native Balance (Gas) - usually 18 decimals
-      const nativeBal = await (client as any).request({
-        method: 'eth_getBalance',
-        params: [userAddress as `0x${string}`, 'latest']
-      });
-      const usdcGasFormatted = formatUnits(BigInt(nativeBal), 18);
+      let usdcGasFormatted = "0.00";
+      try {
+        const nativeBal = await (client as any).request({
+          method: 'eth_getBalance',
+          params: [userAddress as `0x${string}`, 'latest']
+        });
+        usdcGasFormatted = formatUnits(BigInt(nativeBal), 18);
+      } catch (e) {
+        console.warn("Failed to fetch Native Gas balance", e);
+      }
 
       // 2. Fetch USDC ERC20 Balance - 6 decimals
-      const encodedBalanceOfUSDC = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [userAddress]
-      });
-      
       let usdcTokenFormatted = "0.00";
       try {
+        const encodedBalanceOfUSDC = encodeFunctionData({
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [userAddress]
+        });
          const tokenBalUSDC = await (client as any).request({
           method: 'eth_call',
           params: [{
@@ -216,14 +220,13 @@ export default function SwapInterface() {
       }
 
       // 3. Fetch EURC ERC20 Balance - 6 decimals
-      const encodedBalanceOfEURC = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: 'balanceOf',
-        args: [userAddress]
-      });
-
       let eurcFormatted = "0.00";
       try {
+        const encodedBalanceOfEURC = encodeFunctionData({
+            abi: ERC20_ABI,
+            functionName: 'balanceOf',
+            args: [userAddress]
+        });
         const tokenBalEURC = await (client as any).request({
           method: 'eth_call',
           params: [{
@@ -338,7 +341,15 @@ export default function SwapInterface() {
 
   // TradingView Widget Script
   useEffect(() => {
+    const container = document.getElementById('tradingview_chart');
+    if (!container) return;
+
+    // Clean up previous script if any
+    const existingScript = document.getElementById('tv-script');
+    if (existingScript) existingScript.remove();
+
     const script = document.createElement('script');
+    script.id = 'tv-script';
     script.src = 'https://s3.tradingview.com/tv.js';
     script.async = true;
     script.onload = () => {
@@ -361,6 +372,14 @@ export default function SwapInterface() {
       }
     };
     document.head.appendChild(script);
+
+    return () => {
+        // Cleanup if component unmounts
+        const s = document.getElementById('tv-script');
+        if (s) s.remove();
+        // We can't easily destroy the widget instance but we can clean the container
+        if (container) container.innerHTML = '';
+    };
   }, []);
 
   const handleApprove = async () => {
