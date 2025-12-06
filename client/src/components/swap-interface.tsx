@@ -490,9 +490,12 @@ export default function SwapInterface() {
       <nav className="w-full max-w-7xl mx-auto p-4 flex justify-between items-center z-10">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-            <span className="text-primary-foreground font-bold italic text-lg">eM</span>
+            <span className="text-primary-foreground font-bold italic text-lg">AS</span>
           </div>
-          <span className="text-xl font-bold tracking-tight">eMadness</span>
+          <div className="flex flex-col">
+            <span className="text-xl font-bold tracking-tight leading-none">Arc Swap</span>
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Testnet</span>
+          </div>
         </div>
         
         <div className="flex items-center gap-3">
