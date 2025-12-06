@@ -159,8 +159,8 @@ const INITIAL_TRADES = [
     tokenSymbol: "EURC",
     usdcAmount: "9.3200",
     time: "1m ago",
-    hash: "0x123...abc",
-    fullHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+    hash: "0x3a1b...9c2d",
+    fullHash: "0x3a1b2c3d4e5f67890123456789abcdef0123456789abcdef01234567899c2d"
   },
   {
     trader: "0xeca1...0347",
@@ -170,8 +170,8 @@ const INITIAL_TRADES = [
     tokenSymbol: "EURC",
     usdcAmount: "18.4731",
     time: "5m ago",
-    hash: "0x456...def",
-    fullHash: "0x4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12"
+    hash: "0x7e8f...1a2b",
+    fullHash: "0x7e8f9a0b1c2d3e4f567890123456789abcdef0123456789abcdef012341a2b"
   },
   {
     trader: "0xb141...afa2",
@@ -181,8 +181,8 @@ const INITIAL_TRADES = [
     tokenSymbol: "EURC",
     usdcAmount: "12.3160",
     time: "12m ago",
-    hash: "0x789...ghi",
-    fullHash: "0x7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234"
+    hash: "0x5c6d...3e4f",
+    fullHash: "0x5c6d7e8f9a0b1c2d3e4f567890123456789abcdef0123456789abcdef03e4f"
   },
   {
     trader: "0xb063...b7c1",
@@ -192,8 +192,8 @@ const INITIAL_TRADES = [
     tokenSymbol: "EURC",
     usdcAmount: "5.0000",
     time: "25m ago",
-    hash: "0xabc...123",
-    fullHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678"
+    hash: "0x9a0b...5c6d",
+    fullHash: "0x9a0b1c2d3e4f567890123456789abcdef0123456789abcdef0123456785c6d"
   }
 ];
 
