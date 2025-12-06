@@ -1287,6 +1287,10 @@ export default function SwapInterface() {
                 </div>
             </Card>
       </main>
+      
+      <footer className="w-full py-6 text-center text-sm text-muted-foreground/50 font-medium">
+        GojoSwap © 2025
+      </footer>
     </div>
   );
 }
