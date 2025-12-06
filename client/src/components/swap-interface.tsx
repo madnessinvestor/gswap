@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ArrowDown, ArrowRight, Settings, ChevronDown, Wallet, Info, RefreshCw, ExternalLink, TrendingUp, Activity, AlertCircle } from "lucide-react";
+import { ArrowDown, ArrowRight, Settings, ChevronDown, Wallet, Info, RefreshCw, ExternalLink, TrendingUp, Activity, AlertCircle, Ghost, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -1149,11 +1149,18 @@ export default function SwapInterface() {
                         <tr key={i} className="hover:bg-secondary/20 transition-colors group">
                             <td className="px-6 py-4 font-semibold text-foreground">
                                 <div className="flex items-center gap-2">
-                                  {trade.trader.includes('Router') ? 'Router' : (
-                                      <a href={`${arcTestnet.blockExplorers.default.url}/address/${(trade as any).fullTrader || trade.trader}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-2">
-                                        {trade.trader}
-                                        <ExternalLink className="w-3 h-3 text-orange-500/70 hover:text-orange-500 cursor-pointer" />
-                                      </a>
+                                  {showMyTrades ? (
+                                      trade.trader.includes('Router') ? 'Router' : (
+                                          <a href={`${arcTestnet.blockExplorers.default.url}/address/${(trade as any).fullTrader || trade.trader}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-2">
+                                            {trade.trader}
+                                            <ExternalLink className="w-3 h-3 text-orange-500/70 hover:text-orange-500 cursor-pointer" />
+                                          </a>
+                                      )
+                                  ) : (
+                                      <span className="text-muted-foreground italic flex items-center gap-2 opacity-70">
+                                        <Ghost className="w-4 h-4" />
+                                        Anonymous
+                                      </span>
                                   )}
                                 </div>
                             </td>
@@ -1206,9 +1213,16 @@ export default function SwapInterface() {
                             <td className="px-6 py-4 text-muted-foreground text-xs font-medium">{trade.time}</td>
                             <td className="px-6 py-4 text-right">
                                 <div className="flex justify-end">
-                                    <a href={`${arcTestnet.blockExplorers.default.url}/tx/${(trade as any).fullHash || trade.hash}`} target="_blank" rel="noopener noreferrer">
-                                        <ExternalLink className="w-4 h-4 text-orange-500/70 hover:text-orange-500 cursor-pointer transition-colors" />
-                                    </a>
+                                    {showMyTrades ? (
+                                        <a href={`${arcTestnet.blockExplorers.default.url}/tx/${(trade as any).fullHash || trade.hash}`} target="_blank" rel="noopener noreferrer">
+                                            <ExternalLink className="w-4 h-4 text-orange-500/70 hover:text-orange-500 cursor-pointer transition-colors" />
+                                        </a>
+                                    ) : (
+                                        <div className="flex items-center gap-1 text-muted-foreground/50 text-xs italic">
+                                            <Lock className="w-3 h-3" />
+                                            <span>Private</span>
+                                        </div>
+                                    )}
                                 </div>
                             </td>
                         </tr>
