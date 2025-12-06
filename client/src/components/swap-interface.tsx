@@ -298,6 +298,8 @@ export default function SwapInterface() {
             args: [account, POOL_ADDRESS]
         });
 
+        console.log(`Checking allowance for ${fromToken.symbol} (${fromToken.address})`);
+        
         const allowanceResult = await (client as any).request({
             method: 'eth_call',
             params: [{
@@ -309,6 +311,8 @@ export default function SwapInterface() {
         const currentAllowance = BigInt(allowanceResult);
         const amountToSpend = parseUnits(inputAmount || "0", fromToken.decimals);
         
+        console.log(`Allowance: ${formatUnits(currentAllowance, fromToken.decimals)}, Required: ${inputAmount}`);
+
         setNeedsApproval(currentAllowance < amountToSpend);
 
     } catch (e) {
@@ -320,9 +324,9 @@ export default function SwapInterface() {
      if (walletConnected && account && inputAmount) {
          checkAllowance();
      }
-  }, [walletConnected, account, inputAmount, fromToken]); // Re-run when these change
+  }, [walletConnected, account, inputAmount, fromToken]);
 
-  const handleApprove = async () => {
+  const connectWallet = async () => {
     const client = getWalletClient();
     if (!client) {
         toast({ title: "Wallet not found", description: "Please install MetaMask or Rabby", variant: "destructive" });
@@ -368,44 +372,7 @@ export default function SwapInterface() {
     setOutputAmount((num * rate).toFixed(4));
   }, [inputAmount, fromToken, toToken, currentRate]);
 
-  // Check Allowance with explicit logging
-  const checkAllowance = async () => {
-    if (!account) {
-      setNeedsApproval(false);
-      return;
-    }
-
-    const client = getWalletClient();
-    if (!client) return;
-
-    try {
-        const encodedAllowance = encodeFunctionData({
-            abi: ERC20_ABI,
-            functionName: 'allowance',
-            args: [account, POOL_ADDRESS]
-        });
-
-        console.log(`Checking allowance for ${fromToken.symbol} (${fromToken.address})`);
-        
-        const allowanceResult = await (client as any).request({
-            method: 'eth_call',
-            params: [{
-                to: fromToken.address as `0x${string}`,
-                data: encodedAllowance
-            }, 'latest']
-        });
-        
-        const currentAllowance = BigInt(allowanceResult);
-        const amountToSpend = parseUnits(inputAmount || "0", fromToken.decimals);
-        
-        console.log(`Allowance: ${formatUnits(currentAllowance, fromToken.decimals)}, Required: ${inputAmount}`);
-
-        setNeedsApproval(currentAllowance < amountToSpend);
-
-    } catch (e) {
-        console.error("Check allowance failed", e);
-    }
-  };
+  const handleApprove = async () => {
       const client = getWalletClient();
       if (!client || !account) return;
       
