@@ -153,39 +153,47 @@ const CHART_DATA = [
 const INITIAL_TRADES = [
   {
     trader: "0x8795...241d",
+    fullTrader: "0x8795F7a1b3C4e5d6F7a1b3C4e5d6F7a1b3C4241d",
     type: "Buy",
     tokenAmount: "7.5225",
     tokenSymbol: "EURC",
     usdcAmount: "9.3200",
     time: "1m ago",
-    hash: "0x123...abc"
+    hash: "0x123...abc",
+    fullHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
   },
   {
     trader: "0xeca1...0347",
+    fullTrader: "0xeca1F7a1b3C4e5d6F7a1b3C4e5d6F7a1b3C40347",
     type: "Sell",
     tokenAmount: "15.0000",
     tokenSymbol: "EURC",
     usdcAmount: "18.4731",
     time: "5m ago",
-    hash: "0x456...def"
+    hash: "0x456...def",
+    fullHash: "0x4567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef12"
   },
   {
     trader: "0xb141...afa2",
+    fullTrader: "0xb141F7a1b3C4e5d6F7a1b3C4e5d6F7a1b3C4afa2",
     type: "Sell",
     tokenAmount: "10.0000",
     tokenSymbol: "EURC",
     usdcAmount: "12.3160",
     time: "12m ago",
-    hash: "0x789...ghi"
+    hash: "0x789...ghi",
+    fullHash: "0x7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234"
   },
   {
     trader: "0xb063...b7c1",
+    fullTrader: "0xb063F7a1b3C4e5d6F7a1b3C4e5d6F7a1b3C4b7c1",
     type: "Buy",
     tokenAmount: "4.0354",
     tokenSymbol: "EURC",
     usdcAmount: "5.0000",
     time: "25m ago",
-    hash: "0xabc...123"
+    hash: "0xabc...123",
+    fullHash: "0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef12345678"
   }
 ];
 
@@ -415,14 +423,17 @@ export default function SwapInterface() {
         const amount = (Math.random() * 100 + 1).toFixed(4);
         const usdcAmt = (parseFloat(amount) * (isBuy ? 1/7.56 : 7.56)).toFixed(4);
         
+        const fullHash = `0x${Math.random().toString(16).substr(2, 64).padEnd(64, '0')}`;
         const randomTrade = {
             trader: `0x${Math.random().toString(16).substr(2, 4)}...${Math.random().toString(16).substr(2, 4)}`,
+            fullTrader: `0x${Math.random().toString(16).substr(2, 40).padEnd(40, '0')}`,
             type: isBuy ? 'Buy' : 'Sell',
             tokenAmount: amount,
             tokenSymbol: 'EURC', // Simplified to assume EURC/USDC pair primarily
             usdcAmount: usdcAmt, 
             time: "Just now",
-            hash: `0x${Math.random().toString(16).substr(2, 6)}...`
+            hash: `${fullHash.slice(0, 6)}...`,
+            fullHash: fullHash
         };
         
         setTrades(prev => [randomTrade, ...prev.slice(0, 19)]); // Keep last 20
@@ -520,12 +531,14 @@ export default function SwapInterface() {
               const isBuy = fromToken.symbol === 'USDC';
               const newTrade = {
                 trader: `${account.slice(0,6)}...${account.slice(-4)}`,
+                fullTrader: account,
                 type: isBuy ? 'Buy' : 'Sell',
                 tokenAmount: isBuy ? parseFloat(outputAmount).toFixed(4) : parseFloat(inputAmount).toFixed(4),
                 tokenSymbol: isBuy ? toToken.symbol : fromToken.symbol,
                 usdcAmount: isBuy ? parseFloat(inputAmount).toFixed(4) : parseFloat(outputAmount).toFixed(4),
                 time: "Just now",
-                hash: `${hash.slice(0,6)}...${hash.slice(-4)}`
+                hash: `${hash.slice(0,6)}...${hash.slice(-4)}`,
+                fullHash: hash
               };
               setTrades(prev => [newTrade, ...prev]);
 
@@ -923,8 +936,12 @@ export default function SwapInterface() {
                         <tr key={i} className="hover:bg-secondary/20 transition-colors group">
                             <td className="px-6 py-4 font-semibold text-foreground">
                                 <div className="flex items-center gap-2">
-                                  {trade.trader.includes('Router') ? 'Router' : trade.trader}
-                                  <ExternalLink className="w-3 h-3 text-orange-500/70 hover:text-orange-500 cursor-pointer" />
+                                  {trade.trader.includes('Router') ? 'Router' : (
+                                      <a href={`${arcTestnet.blockExplorers.default.url}/address/${(trade as any).fullTrader || trade.trader}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-2">
+                                        {trade.trader}
+                                        <ExternalLink className="w-3 h-3 text-orange-500/70 hover:text-orange-500 cursor-pointer" />
+                                      </a>
+                                  )}
                                 </div>
                             </td>
                             <td className="px-6 py-4">
@@ -976,7 +993,9 @@ export default function SwapInterface() {
                             <td className="px-6 py-4 text-muted-foreground text-xs font-medium">{trade.time}</td>
                             <td className="px-6 py-4 text-right">
                                 <div className="flex justify-end">
-                                    <ExternalLink className="w-4 h-4 text-orange-500/70 hover:text-orange-500 cursor-pointer transition-colors" />
+                                    <a href={`${arcTestnet.blockExplorers.default.url}/tx/${(trade as any).fullHash || trade.hash}`} target="_blank" rel="noopener noreferrer">
+                                        <ExternalLink className="w-4 h-4 text-orange-500/70 hover:text-orange-500 cursor-pointer transition-colors" />
+                                    </a>
                                 </div>
                             </td>
                         </tr>
