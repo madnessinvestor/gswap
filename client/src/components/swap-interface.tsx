@@ -86,6 +86,13 @@ const ERC20_ABI = [
 
 const ROUTER_ABI = [
   {
+    name: 'WETH',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address' }]
+  },
+  {
     name: 'swapExactETHForTokens',
     type: 'function',
     stateMutability: 'payable',
@@ -160,6 +167,7 @@ export default function SwapInterface() {
   const [slippage, setSlippage] = useState("0.5");
   const [balances, setBalances] = useState({ USDC: "0.00", EURC: "0.00" });
   const [needsApproval, setNeedsApproval] = useState(false);
+  const [wethAddress, setWethAddress] = useState("");
 
   // Initialize Viem Client
   const getWalletClient = () => {
@@ -171,6 +179,33 @@ export default function SwapInterface() {
     }
     return null;
   };
+
+  // Fetch WETH Address from Router
+  useEffect(() => {
+      const fetchWeth = async () => {
+          const client = getWalletClient();
+          if (!client) return;
+          try {
+              const weth = await (client as any).request({
+                  method: 'eth_call',
+                  params: [{
+                      to: ROUTER_ADDRESS,
+                      data: encodeFunctionData({
+                          abi: ROUTER_ABI,
+                          functionName: 'WETH'
+                      })
+                  }, 'latest']
+              });
+              // Decode address from result (remove padding)
+              const addr = '0x' + weth.slice(-40);
+              setWethAddress(addr);
+              console.log("Fetched WETH Address:", addr);
+          } catch (e) {
+              console.error("Failed to fetch WETH address", e);
+          }
+      };
+      fetchWeth();
+  }, []);
 
   // Fetch Balances
   const fetchBalances = async (userAddress: string) => {
@@ -351,7 +386,13 @@ export default function SwapInterface() {
           const amountOutMinVal = parseFloat(outputAmount) * (1 - parseFloat(slippage)/100);
           const amountOutMin = parseUnits(amountOutMinVal.toFixed(toToken.decimals), toToken.decimals);
           const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 mins
-          const path = [fromToken.address, toToken.address];
+          
+          // Use WETH address for path if available, otherwise fallback (though fallback will likely fail for Native)
+          // Native Token Address (0x36...) is NOT the Wrapped Token Address needed for the path.
+          const fromAddr = fromToken.isNative ? wethAddress : fromToken.address;
+          const toAddr = toToken.isNative ? wethAddress : toToken.address;
+          
+          const path = [fromAddr, toAddr];
 
           let data;
           let value = BigInt(0);
