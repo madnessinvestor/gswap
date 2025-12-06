@@ -1,0 +1,124 @@
+Technical Details
+Deep dive into the technical implementation, security considerations, and optimization strategies.
+
+Smart Contract Architecture
+Inheritance Hierarchy
+SimplePoolWithLP:
+
+contract SimplePoolWithLP is ERC20, ReentrancyGuard, Ownable
+ERC20: LP token functionality
+ReentrancyGuard: Prevents reentrancy attacks
+Ownable: Pool ownership (currently unused, reserved for future)
+Router:
+
+contract Router is ReentrancyGuard
+ReentrancyGuard: Prevents reentrancy attacks
+PoolFactory:
+
+contract PoolFactory
+No inheritance (simple contract)
+Reserve Synchronization
+Why Sync Reserves?
+Reserves can become stale if:
+
+External tokens are sent directly to pool
+Tokens are airdropped to pool
+Other contracts interact with pool
+Sync Mechanism
+function _update() private {
+    reserveA = tokenA.balanceOf(address(this));
+    reserveB = tokenB.balanceOf(address(this));
+    emit Sync(reserveA, reserveB);
+}
+Called:
+
+Before every operation (to get current state)
+After every operation (to update state)
+Publicly via sync() function
+Benefits
+Accuracy: Reserves always match reality
+Flexibility: External contracts can interact
+Reliability: No stale data issues
+Gas Optimization
+Optimizations Used
+1. Unchecked Arithmetic: Used in loops where overflow is impossible
+
+2. Storage Packing: State variables packed efficiently
+
+3. External Functions: View functions marked external
+
+4. Calldata: Path arrays use calldata instead of memory
+
+Gas Costs (Approximate)
+Create Pool: ~2,000,000 gas
+Add Liquidity: ~150,000 gas
+Remove Liquidity: ~100,000 gas
+Direct Swap: ~60,000 gas
+Multi-Hop Swap: ~120,000 gas per hop
+Security Considerations
+Reentrancy Protection
+All state-changing functions use nonReentrant modifier:
+
+function swapAToB(...) external nonReentrant {
+    // Swap logic
+}
+Safe Token Transfers
+Uses OpenZeppelin's SafeERC20:
+
+using SafeERC20 for IERC20;
+tokenA.safeTransferFrom(msg.sender, address(this), amount);
+Slippage Protection
+All user-facing functions include minimum amount parameters.
+
+Access Control
+Pool Functions: Public (anyone can swap/add liquidity)
+Factory: Public (anyone can create pools)
+Router: Public (anyone can swap)
+Decimal Handling
+Token Decimals
+Different tokens use different decimals:
+
+USDC: 6 decimals
+Most ERC20: 18 decimals
+Calculations
+All calculations use raw token amounts (wei/smallest unit):
+
+No decimal conversion in contracts
+Frontend handles decimal formatting
+Reserves stored as uint256
+Example
+1 USDC = 1,000,000 (6 decimals)
+1 SRAC = 1,000,000,000,000,000,000 (18 decimals)
+Event Indexing
+Indexed Parameters
+Events use indexed parameters for efficient filtering:
+
+event Swap(
+    address indexed sender,
+    uint256 amountAIn,
+    uint256 amountBIn,
+    uint256 amountAOut,
+    uint256 amountBOut,
+    address indexed to
+);
+**Indexed:** sender, to (for filtering by address)
+
+Not Indexed: Amounts (for detailed querying)
+
+Error Handling
+Custom Errors (Future)
+Solidity 0.8.4+ supports custom errors for gas savings:
+
+error InsufficientLiquidity();
+error SlippageTooHigh();
+Currently uses require statements with strings.
+
+Upgradeability
+Current State
+Pools: Not upgradeable (immutable)
+Factory: Not upgradeable (immutable)
+Router: Not upgradeable (immutable)
+Future Considerations
+Proxy patterns for upgradeability
+Governance for parameter changes
+Fee adjustments via governance

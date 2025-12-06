@@ -1,0 +1,114 @@
+Liquidity Pools
+Liquidity pools are the foundation of the DEX, enabling token swaps and providing liquidity providers with fee-earning opportunities.
+
+Pool Requirements
+USDC Pair Requirement
+All pools must include USDC as one of the tokens. This ensures:
+
+Standardization: All tokens can be priced against USDC
+Liquidity Concentration: Better rates through shared liquidity
+Multi-Hop Routing: Easy pathfinding via USDC
+Token Pairing
+Token A: Must be USDC (0x3600...0000)
+Token B: Any ERC20 token on Arc Testnet
+Ordering: Tokens are sorted by address (lower address = token0)
+Adding Liquidity
+Process
+1. Approve Tokens: User approves pool to spend tokens
+
+2. Calculate Ratio: System calculates optimal amounts based on current reserves
+
+3. Transfer Tokens: Tokens transferred to pool
+
+4. Mint LP Tokens: LP tokens minted proportional to contribution
+
+5. Update Reserves: Reserves synced with actual balances
+
+First Liquidity Provider
+When adding liquidity to an empty pool:
+
+Liquidity calculated as sqrt(amountA * amountB)
+MINIMUM_LIQUIDITY (1000) is locked forever
+Remaining liquidity minted to provider
+Why MINIMUM_LIQUIDITY?
+
+Prevents first person from draining pool
+Ensures pool always has some liquidity
+Standard Uniswap V2 pattern
+Subsequent Providers
+When pool already has liquidity:
+
+Must provide tokens in correct ratio
+LP tokens minted based on share: min(amountA * totalSupply / reserveA, amountB * totalSupply / reserveB)
+Slippage protection ensures minimum amounts
+Removing Liquidity
+Process
+1. Burn LP Tokens: User burns their LP tokens
+
+2. **Calculate Amounts**: Proportional amounts calculated: amountA = (liquidity * reserveA) / totalSupply
+
+3. Transfer Tokens: Tokens transferred to user
+
+4. Update Reserves: Reserves synced
+
+Slippage Protection
+All removal operations include:
+
+amountAMin: Minimum amount of token A to receive
+amountBMin: Minimum amount of token B to receive
+Transaction reverts if amounts are below minimums.
+
+LP Tokens
+What are LP Tokens?
+LP (Liquidity Provider) tokens are ERC20 tokens representing your share of a pool.
+
+Properties:
+
+ERC20 Standard: Can be transferred, traded, etc.
+Proportional Ownership: Amount represents your share
+Fee Earnings: Fees accrue to LP token holders proportionally
+LP Token Calculation
+First Provider:
+
+liquidity = sqrt(amountA * amountB) - MINIMUM_LIQUIDITY
+Subsequent Providers:
+
+liquidity = min(
+    (amountA * totalSupply) / reserveA,
+    (amountB * totalSupply) / reserveB
+)
+LP Token Value
+Your position value:
+
+positionValue = (lpBalance / totalSupply) * (reserveA * priceA + reserveB * priceB)
+Trading Fees
+Fee Structure
+Fee Rate: 0.3% (30 basis points)
+Collection: Fees stay in the pool (increase reserves)
+Distribution: Fees accrue to all LP token holders proportionally
+Fee Calculation
+On every swap:
+
+fee = amountIn * 0.003
+amountInWithFee = amountIn * 0.997
+The fee increases the pool's reserves, benefiting all liquidity providers.
+
+Reserve Management
+Automatic Sync
+Reserves are automatically synced:
+
+Before every swap
+After every swap
+Before adding liquidity
+After adding liquidity
+Before removing liquidity
+After removing liquidity
+Manual Sync
+Anyone can call sync() to update reserves:
+
+pool.sync();  // Updates reserves to match actual balances
+When to use:
+
+If reserves become stale
+After external token transfers
+For frontend data accuracy

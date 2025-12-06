@@ -1,0 +1,125 @@
+Swap Mechanics
+Understanding how token swaps work in the DEX, including price calculation, slippage, and multi-hop routing.
+
+Constant Product Formula
+The DEX uses the constant product formula (x * y = k) popularized by Uniswap V2.
+
+Formula
+(reserveA + amountA) * (reserveB - amountB) = k
+Where k is a constant that must remain the same before and after the swap.
+
+With Fees
+The actual formula accounts for the 0.3% trading fee:
+
+amountOut = (amountInWithFee * reserveOut) / ((reserveIn * 10000) + amountInWithFee)
+Where:
+
+amountInWithFee = amountIn * 9970 (10000 - 30 basis points)
+reserveIn: Reserve of input token
+reserveOut: Reserve of output token
+Price Impact
+What is Price Impact?
+Price impact is the difference between the current price and the execution price due to the swap size.
+
+Formula:
+
+priceImpact = (amountOut / amountIn) / (reserveOut / reserveIn) - 1
+Factors Affecting Price Impact
+1. Swap Size: Larger swaps = higher impact
+
+2. Pool Liquidity: More liquidity = lower impact
+
+3. Reserve Ratio: Imbalanced pools = higher impact
+
+Example
+Pool: 1000 USDC / 2000 SRAC
+
+Current price: 0.5 USDC per SRAC
+Swap: 100 USDC for SRAC
+New reserves: 1100 USDC / ~1818 SRAC
+Execution price: ~0.055 USDC per SRAC
+Price impact: ~10%
+Slippage Protection
+What is Slippage?
+Slippage is the difference between expected and actual execution price.
+
+Protection Mechanisms
+All swap functions include minimum output parameters:
+
+function swapAToB(
+    uint256 amountAIn,
+    uint256 amountBOutMin,  // Slippage protection
+    address to
+) external
+How it works:
+
+User sets amountBOutMin based on acceptable slippage
+If actual output < minimum, transaction reverts
+Protects against front-running and price movements
+Recommended Slippage
+Stable Pairs: 0.1% - 0.5%
+Volatile Pairs: 0.5% - 1.0%
+Large Swaps: 1.0% - 3.0%
+Multi-Hop Swaps
+When Are They Used?
+Multi-hop swaps are used when:
+
+No direct pool exists between two tokens
+Better rates available through intermediate token
+Router automatically finds optimal path
+Path Finding
+The Router's findBestPath function:
+
+1. Checks Direct Pool: Looks for direct pool first
+
+2. Checks USDC Route: Looks for path via USDC
+
+3. Returns Path: Returns best path found
+
+Example:
+
+SRAC -> RACS (no direct pool)
+Router finds: SRAC -> USDC -> RACS
+Execution Flow
+1. User approves Router to spend input token
+
+2. Router transfers input token from user
+
+3. Router executes swaps through path:
+
+- Intermediate tokens sent to Router
+
+- Final token sent to user
+
+4. All swaps happen atomically (single transaction)
+
+Gas Costs
+Multi-hop swaps cost more gas:
+
+Direct Swap: ~60,000 gas
+2-Hop Swap: ~120,000 gas
+3-Hop Swap: ~180,000 gas
+Price Calculation
+Spot Price
+Current price without considering swap impact:
+
+spotPrice = reserveB / reserveA
+Execution Price
+Actual price after swap:
+
+executionPrice = amountOut / amountIn
+Effective Price
+Price including fees:
+
+effectivePrice = (amountOut / amountIn) * (1 + fee)
+Front-Running Protection
+MEV Considerations
+The DEX includes several protections:
+
+Slippage Limits: Users set minimum output
+Non-Reentrant: Prevents reentrancy attacks
+Atomic Swaps: All operations happen in one transaction
+Best Practices
+Set appropriate slippage tolerance
+Use recent block data for price estimates
+Consider using private mempools for large swaps

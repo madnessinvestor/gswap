@@ -1,0 +1,151 @@
+SimplePoolWithLP Contract
+The SimplePoolWithLP contract is the core liquidity pool implementation. Each pool manages a pair of tokens and issues LP (Liquidity Provider) tokens to track ownership.
+
+Contract Address
+Pools are created dynamically by the PoolFactory. Each token pair has its own pool address.
+
+Key Features
+Constant Product Formula: Uses x * y = k (Uniswap V2 style)
+LP Token Support: ERC20 tokens representing liquidity shares
+Automatic Reserve Sync: Reserves sync with actual token balances
+Fee Collection: 0.3% fee on all swaps (30 basis points)
+State Variables
+IERC20 public tokenA;        // First token in the pair
+IERC20 public tokenB;        // Second token in the pair
+uint256 public reserveA;      // Current reserve of tokenA
+uint256 public reserveB;      // Current reserve of tokenB
+uint256 public constant FEE_BPS = 30;  // 0.3% fee (30 basis points)
+Core Functions
+addLiquidity
+Adds liquidity to the pool and mints LP tokens.
+
+function addLiquidity(
+    uint256 amountADesired,
+    uint256 amountBDesired,
+    uint256 amountAMin,
+    uint256 amountBMin
+) external returns (uint256 liquidity)
+Parameters:
+
+amountADesired: Desired amount of token A
+amountBDesired: Desired amount of token B
+amountAMin: Minimum amount of token A (slippage protection)
+amountBMin: Minimum amount of token B (slippage protection)
+Returns: Amount of LP tokens minted
+
+How it works:
+
+1. Syncs reserves to get current state
+
+2. Calculates optimal amounts based on current ratio
+
+3. Transfers tokens from user to pool
+
+4. Mints LP tokens proportional to contribution
+
+5. Updates reserves
+
+First Liquidity Provision:
+
+Calculates liquidity as sqrt(amountA * amountB)
+Locks MINIMUM_LIQUIDITY (1000) to prevent first person from draining
+Remaining liquidity is minted to the provider
+removeLiquidity
+Removes liquidity from the pool and burns LP tokens.
+
+function removeLiquidity(
+    uint256 liquidity,
+    uint256 amountAMin,
+    uint256 amountBMin,
+    address to
+) external returns (uint256 amountA, uint256 amountB)
+Parameters:
+
+liquidity: Amount of LP tokens to burn
+amountAMin: Minimum amount of token A to receive
+amountBMin: Minimum amount of token B to receive
+to: Address to receive the tokens
+Returns: Amounts of token A and token B received
+
+How it works:
+
+1. Calculates proportional amounts based on LP share
+
+2. Burns LP tokens
+
+3. Transfers tokens to recipient
+
+4. Updates reserves
+
+swapAToB
+Swaps token A for token B.
+
+function swapAToB(
+    uint256 amountAIn,
+    uint256 amountBOutMin,
+    address to
+) external returns (uint256 amountBOut)
+Parameters:
+
+amountAIn: Amount of token A to swap
+amountBOutMin: Minimum amount of token B to receive (slippage protection)
+to: Address to receive token B
+Returns: Amount of token B received
+
+swapBToA
+Swaps token B for token A.
+
+function swapBToA(
+    uint256 amountBIn,
+    uint256 amountAOutMin,
+    address to
+) external returns (uint256 amountAOut)
+Parameters:
+
+amountBIn: Amount of token B to swap
+amountAOutMin: Minimum amount of token A to receive (slippage protection)
+to: Address to receive token A
+Returns: Amount of token A received
+
+Swap Formula
+The swap uses the constant product formula with fees:
+
+amountOut = (amountInWithFee * reserveOut) / ((reserveIn * 10000) + amountInWithFee)
+Where:
+
+amountInWithFee = amountIn * (10000 - FEE_BPS) (9970 for 0.3% fee)
+FEE_BPS = 30 (0.3% = 30 basis points)
+This ensures the constant product (reserveA + amountA) * (reserveB - amountB) = k is maintained.
+
+Reserve Management
+_update()
+Internal function that syncs reserves with actual token balances:
+
+function _update() private {
+    reserveA = tokenA.balanceOf(address(this));
+    reserveB = tokenB.balanceOf(address(this));
+    emit Sync(reserveA, reserveB);
+}
+Why this matters:
+
+Ensures reserves always match reality
+Prevents reserve drift from external transfers
+Called automatically before and after swaps/liquidity operations
+sync()
+Public function anyone can call to sync reserves:
+
+function sync() external {
+    _update();
+}
+Useful for fixing pools if reserves become stale.
+
+Events
+Mint(address indexed sender, uint256 amountA, uint256 amountB): Emitted when liquidity is added
+Burn(address indexed sender, uint256 amountA, uint256 amountB, address indexed to): Emitted when liquidity is removed
+Swap(...): Emitted on every swap
+Sync(uint256 reserveA, uint256 reserveB): Emitted when reserves are updated
+Security Features
+ReentrancyGuard: Prevents reentrancy attacks
+SafeERC20: Safe token transfers using OpenZeppelin
+Minimum Liquidity: Prevents first person from draining pool
+Slippage Protection: All functions include minimum amount parameters

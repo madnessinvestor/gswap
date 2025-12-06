@@ -1,0 +1,86 @@
+PoolFactory Contract
+The PoolFactory contract is responsible for creating and managing all liquidity pools in the DEX.
+
+Contract Address
+0x34A0b64a88BBd4Bf6Acba8a0Ff8F27c8aDD67E9C
+Purpose
+The Factory pattern ensures:
+
+One Pool Per Pair: Only one pool exists for each token pair
+Consistent Pool Creation: All pools use the same contract template
+Easy Discovery: Query all pools or find a specific pool
+Key Functions
+createPool
+Creates a new liquidity pool for a token pair.
+
+function createPool(address tokenA, address tokenB) external returns (address pool)
+Parameters:
+
+tokenA: Address of first token
+tokenB: Address of second token
+Returns: Address of the created pool
+
+How it works:
+
+1. Validates tokens are different and not zero address
+
+2. Sorts tokens by address (token0 < token1)
+
+3. Checks pool doesn't already exist
+
+4. Deploys new SimplePoolWithLP contract
+
+5. Stores pool address in mapping (both directions)
+
+6. Adds to allPools array
+
+7. Emits PoolCreated event
+
+Important Notes:
+
+Pools are created automatically when first liquidity is added
+Token order is normalized (lower address = token0)
+Pool address is stored in both directions for easy lookup
+getPool
+Gets the pool address for a token pair.
+
+function getPool(address tokenA, address tokenB) external view returns (address pool)
+Parameters:
+
+tokenA: Address of first token
+tokenB: Address of second token
+Returns: Pool address (address(0) if pool doesn't exist)
+
+Example:
+
+address usdcPool = factory.getPool(USDC, SRAC);
+if (usdcPool != address(0)) {
+    // Pool exists, can swap
+}
+allPoolsLength
+Gets the total number of pools created.
+
+function allPoolsLength() external view returns (uint256)
+Returns: Total number of pools
+
+allPools
+Array containing all pool addresses. Can be accessed with index:
+
+address pool = factory.allPools(0);  // First pool
+Storage Structure
+mapping(address => mapping(address => address)) public pools;  // token0 => token1 => pool
+address[] public allPools;  // All pool addresses
+The mapping stores pools with normalized token order, and also stores the reverse mapping for convenience.
+
+Events
+PoolCreated(address indexed tokenA, address indexed tokenB, address pool, uint256): Emitted when a new pool is created
+Usage Example
+// Create a new pool
+address newPool = factory.createPool(USDC, SRAC);
+
+// Check if pool exists
+address pool = factory.getPool(USDC, SRAC);
+require(pool != address(0), "Pool not found");
+
+// Get total pools
+uint256 totalPools = factory.allPoolsLength();
