@@ -16,6 +16,7 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "rec
 import { useToast } from "@/hooks/use-toast";
 import { createWalletClient, custom, parseUnits, encodeFunctionData, formatUnits, encodeAbiParameters } from 'viem';
 import logoImage from '@assets/d0bbfa09-77e9-4527-a95a-3ec275fefad8_1765059425973.png';
+import arcSymbol from '@assets/download_1765062780027.png';
 // import { arc } from 'viem/chains'; // Removed as we define custom chain
 
 // Define Arc Testnet Custom Chain for Viem
@@ -811,6 +812,15 @@ export default function SwapInterface() {
               USDC Faucet <ExternalLink className="w-3 h-3" />
             </a>
           </Button>
+          
+          {/* Network Selector */}
+          <div className="hidden sm:flex items-center gap-2 bg-secondary/40 hover:bg-secondary/60 transition-colors rounded-full px-3 py-1.5 border border-border/50 cursor-pointer">
+             <div className="w-4 h-4 rounded-full bg-transparent flex items-center justify-center overflow-hidden">
+                <img src={arcSymbol} alt="Arc" className="w-full h-full object-contain" />
+             </div>
+             <span className="text-sm font-medium">ARC TESTNET</span>
+             <ChevronDown className="w-3 h-3 text-muted-foreground opacity-50" />
+          </div>
           
           {walletConnected && account ? (
             <div 
