@@ -1,0 +1,150 @@
+Router Contract
+The Router contract enables multi-hop swaps and optimal routing when no direct pool exists between two tokens.
+
+Contract Address
+0x284C5Afc100ad14a458255075324fA0A9dfd66b1
+Purpose
+The Router provides:
+
+Multi-Hop Swaps: Swap tokens through intermediate pools
+Path Finding: Automatically finds best swap path
+Optimal Routing: Usually routes via USDC for best rates
+Single Transaction: All swaps happen atomically
+Key Functions
+swapExactTokensForTokens
+Swaps exact amount of input tokens for minimum output tokens.
+
+function swapExactTokensForTokens(
+    uint256 amountIn,
+    uint256 amountOutMin,
+    address[] calldata path,
+    address to
+) external returns (uint256[] memory amounts)
+Parameters:
+
+amountIn: Exact amount of input tokens
+amountOutMin: Minimum amount of output tokens (slippage protection)
+path: Array of token addresses [tokenIn, intermediate, ..., tokenOut]
+to: Address to receive output tokens
+Returns: Array of amounts at each step
+
+Example Path:
+
+// Swap SRAC -> USDC -> RACS
+address[] memory path = new address[](3);
+path[0] = SRAC;
+path[1] = USDC;
+path[2] = RACS;
+swapTokensForExactTokens
+Swaps tokens for exact amount of output tokens.
+
+function swapTokensForExactTokens(
+    uint256 amountOut,
+    uint256 amountInMax,
+    address[] calldata path,
+    address to
+) external returns (uint256[] memory amounts)
+Parameters:
+
+amountOut: Exact amount of output tokens desired
+amountInMax: Maximum amount of input tokens (slippage protection)
+path: Array of token addresses
+to: Address to receive output tokens
+Returns: Array of amounts at each step
+
+findBestPath
+Finds the best swap path between two tokens.
+
+function findBestPath(address tokenIn, address tokenOut) 
+    external 
+    view 
+    returns (address[] memory path)
+Parameters:
+
+tokenIn: Input token address
+tokenOut: Output token address
+Returns: Array of token addresses representing the path (empty if no path exists)
+
+Path Finding Logic:
+
+1. Checks if direct pool exists → returns [tokenIn, tokenOut]
+
+2. Checks if path via USDC exists → returns [tokenIn, USDC, tokenOut]
+
+3. Returns empty array if no path found
+
+Example:
+
+address[] memory path = router.findBestPath(SRAC, RACS);
+// Returns: [SRAC, USDC, RACS] if direct pool doesn't exist
+getAmountsOut
+Calculates output amounts for a given input amount and path.
+
+function getAmountsOut(uint256 amountIn, address[] calldata path)
+    public
+    view
+    returns (uint256[] memory amounts)
+Parameters:
+
+amountIn: Input amount
+path: Array of token addresses
+Returns: Array of output amounts at each step
+
+Use Case: Estimate swap output before executing
+
+getAmountsIn
+Calculates input amounts needed for a given output amount and path.
+
+function getAmountsIn(uint256 amountOut, address[] calldata path)
+    public
+    view
+    returns (uint256[] memory amounts)
+Parameters:
+
+amountOut: Desired output amount
+path: Array of token addresses
+Returns: Array of input amounts at each step
+
+Internal Swap Execution
+_swap
+Internal function that executes swaps through the path.
+
+function _swap(
+    uint256[] memory amounts,
+    address[] memory path,
+    address _to
+) internal
+How it works:
+
+1. Loops through each pair in the path
+
+2. Gets pool address from factory
+
+3. Approves pool to spend tokens
+
+4. Calls pool's swap function
+
+5. For intermediate hops, sends tokens to Router
+
+6. For final hop, sends tokens to recipient
+
+Example Multi-Hop Flow:
+
+SRAC -> USDC -> RACS
+
+Step 1: Router receives SRAC from user
+Step 2: Router swaps SRAC -> USDC (sends USDC to Router)
+Step 3: Router swaps USDC -> RACS (sends RACS to user)
+Swap Formula
+Uses the same constant product formula as pools:
+
+amountOut = (amountInWithFee * reserveOut) / ((reserveIn * 10000) + amountInWithFee)
+Where amountInWithFee = amountIn * 9970 (0.3% fee)
+
+Events
+SwapExecuted(address indexed user, address[] path, uint256 amountIn, uint256 amountOut): Emitted on every router swap
+Security Features
+ReentrancyGuard: Prevents reentrancy attacks
+SafeERC20: Safe token transfers
+Path Validation: Ensures all pools in path exist
+Slippage Protection: Minimum output amounts required
