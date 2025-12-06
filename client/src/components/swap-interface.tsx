@@ -361,8 +361,10 @@ export default function SwapInterface() {
           const amountOutMin = parseUnits(amountOutMinVal.toFixed(toToken.decimals), toToken.decimals);
           const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 mins
           
-          // Use the provided addresses for the path
-          const path = [fromToken.address, toToken.address];
+          const fromAddr = fromToken.isNative ? "0x3600000000000000000000000000000000000000" : fromToken.address;
+          const toAddr = toToken.isNative ? "0x3600000000000000000000000000000000000000" : toToken.address;
+          
+          const path = [fromAddr, toAddr];
 
           let data;
           let value = BigInt(0);
@@ -607,6 +609,55 @@ export default function SwapInterface() {
                     <TokenSelector selected={toToken} onSelect={setToToken} />
                   </div>
                 </div>
+
+                {/* Detailed Info Section */}
+                {inputAmount && (
+                  <div className="bg-background/40 rounded-xl p-3 space-y-2 mt-2 border border-border/40">
+                    <div className="flex justify-between text-xs">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Info className="w-3 h-3" /> Rate
+                      </div>
+                      <div className="font-medium">
+                        1 {fromToken.symbol} = {(parseFloat(outputAmount)/parseFloat(inputAmount) || 0).toFixed(6)} {toToken.symbol}
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Info className="w-3 h-3" /> Price impact
+                      </div>
+                      <div className="font-medium text-green-500">
+                        0.302%
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Settings className="w-3 h-3" /> Max slippage
+                      </div>
+                      <div className="font-medium">
+                        {slippage}%
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Info className="w-3 h-3" /> Receive at least
+                      </div>
+                      <div className="font-medium">
+                        {(parseFloat(outputAmount) * (1 - parseFloat(slippage)/100)).toFixed(6)} {toToken.symbol}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Min Amount Warning */}
+                {parseFloat(inputAmount || "0") > 0 && parseFloat(inputAmount || "0") < 5 && (
+                   <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-red-500">Transaction Failed</p>
+                        <p className="text-[10px] text-red-500/80">Minimum swap amount is $5 USD. Current value: ${parseFloat(inputAmount).toFixed(2)}</p>
+                      </div>
+                   </div>
+                )}
               </div>
 
               <div className="p-4 pt-0">
