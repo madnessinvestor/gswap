@@ -148,13 +148,24 @@ const CHART_DATA = [
   }))
 ];
 
-// Mock Trade History
-const INITIAL_TRADES = [
-  { hash: "0x44cb...7e7f", type: "Buy", amountIn: "5.0000", tokenIn: "USDC", amountOut: "0.6574", tokenOut: "EURC", time: "13m ago" },
-  { hash: "0x8a21...9b3c", type: "Sell", amountIn: "10.0000", tokenIn: "EURC", amountOut: "76.0550", tokenOut: "USDC", time: "15m ago" },
-  { hash: "0x1d4f...2e8a", type: "Buy", amountIn: "100.0000", tokenIn: "USDC", amountOut: "13.1483", tokenOut: "EURC", time: "22m ago" },
-  { hash: "0x9f3e...1d2b", type: "Sell", amountIn: "50.0000", tokenIn: "EURC", amountOut: "380.2750", tokenOut: "USDC", time: "30m ago" },
-];
+// Empty initial trades as requested
+const INITIAL_TRADES: any[] = [];
+
+// Chart generation helpers
+const generateChartData = (basePrice: number, volatility: number) => {
+  return [
+    ...Array.from({ length: 16 }, (_, i) => ({
+      time: `${i}:00`,
+      price: basePrice + (Math.random() * volatility * 2 - volatility),
+    })),
+    { time: '16:00', price: basePrice * 0.99 },
+    { time: '17:00', price: basePrice * 0.95 },
+    ...Array.from({ length: 7 }, (_, i) => ({
+      time: `${17 + i + 1}:00`,
+      price: (basePrice * 0.92) + (Math.random() * volatility - volatility/2),
+    }))
+  ];
+};
 
 export default function SwapInterface() {
   const { toast } = useToast();
@@ -170,6 +181,26 @@ export default function SwapInterface() {
   const [balances, setBalances] = useState({ USDC: "0.00", EURC: "0.00" });
   const [needsApproval, setNeedsApproval] = useState(false);
   const [trades, setTrades] = useState(INITIAL_TRADES);
+  const [chartTimeframe, setChartTimeframe] = useState("1D");
+  
+  // Calculate current exchange rate
+  const currentRate = fromToken.symbol === "EURC" && toToken.symbol === "USDC" ? 7.6055 : 
+                      fromToken.symbol === "USDC" && toToken.symbol === "EURC" ? (1 / 7.6055) : 1;
+
+  // Dynamic Chart Data based on pair
+  const chartData = generateChartData(currentRate, currentRate * 0.005);
+  const priceChange = fromToken.symbol === "EURC" ? -0.32 : 0.005;
+  const priceChangePercent = fromToken.symbol === "EURC" ? 4.15 : 3.8;
+  const isPositive = priceChange >= 0;
+
+  // Validation: Minimum 5 USDC value
+  const usdValue = fromToken.symbol === 'USDC' 
+    ? parseFloat(inputAmount || "0") 
+    : parseFloat(inputAmount || "0") * 7.6055;
+  
+  const isAmountTooLow = parseFloat(inputAmount || "0") > 0 && usdValue < 5;
+
+  // Initialize Viem Client
 
   // Initialize Viem Client
   const getWalletClient = () => {
@@ -323,7 +354,6 @@ export default function SwapInterface() {
   };
 
   // Exchange Rate Logic
-  // Updated to match the user's provided image where EURC seems to be ~7.6055 USDC
   useEffect(() => {
     if (!inputAmount) {
       setOutputAmount("");
@@ -332,13 +362,11 @@ export default function SwapInterface() {
     const num = parseFloat(inputAmount);
     if (isNaN(num)) return;
     
-    // Rate from image: 1 EURC = 7.6055 USDC
-    const rate = fromToken.symbol === "EURC" && toToken.symbol === "USDC" ? 7.6055 : 
-                 fromToken.symbol === "USDC" && toToken.symbol === "EURC" ? (1 / 7.6055) : 1;
-                 
-    setOutputAmount((num * rate).toFixed(4));
-  }, [inputAmount, fromToken, toToken]);
+    setOutputAmount((num * currentRate).toFixed(4));
+  }, [inputAmount, fromToken, toToken, currentRate]);
 
+  // Removed old TradingView Effect
+  
   const handleApprove = async () => {
       const client = getWalletClient();
       if (!client || !account) return;
@@ -673,12 +701,12 @@ export default function SwapInterface() {
                 )}
                 
                 {/* Min Amount Warning */}
-                {parseFloat(inputAmount || "0") > 0 && parseFloat(inputAmount || "0") < 5 && (
+                {isAmountTooLow && (
                    <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2">
                       <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                       <div>
                         <p className="text-xs font-bold text-red-500">Transaction Failed</p>
-                        <p className="text-[10px] text-red-500/80">Minimum swap amount is $5 USD. Current value: ${parseFloat(inputAmount).toFixed(2)}</p>
+                        <p className="text-[10px] text-red-500/80">Minimum value is $5 USDC. Current value: ${usdValue.toFixed(2)} USDC</p>
                       </div>
                    </div>
                 )}
@@ -689,7 +717,7 @@ export default function SwapInterface() {
                      <Button 
                         className="w-full h-14 text-lg font-bold rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
                         onClick={handleApprove}
-                        disabled={!walletConnected || !inputAmount || isApproving}
+                        disabled={!walletConnected || !inputAmount || isApproving || isAmountTooLow}
                       >
                         {isApproving ? (
                           <div className="flex items-center gap-2"><RefreshCw className="animate-spin w-5 h-5"/> Approving...</div>
@@ -699,11 +727,11 @@ export default function SwapInterface() {
                     <Button 
                       className={`w-full h-14 text-lg font-bold rounded-xl shadow-lg ${!walletConnected ? 'bg-secondary text-muted-foreground' : 'bg-primary hover:bg-primary/90 shadow-primary/20'}`}
                       onClick={handleSwap}
-                      disabled={walletConnected && (!inputAmount || isSwapping)}
+                      disabled={walletConnected && (!inputAmount || isSwapping || isAmountTooLow)}
                     >
                       {isSwapping ? (
                         <div className="flex items-center gap-2"><RefreshCw className="animate-spin w-5 h-5"/> Swapping...</div>
-                      ) : !walletConnected ? "Connect Wallet" : !inputAmount ? "Enter Amount" : "Swap"}
+                      ) : !walletConnected ? "Connect Wallet" : !inputAmount ? "Enter Amount" : isAmountTooLow ? "Amount too low" : "Swap"}
                     </Button>
                 )}
                 
@@ -721,23 +749,25 @@ export default function SwapInterface() {
                  <div className="p-6 border-b border-border/50 bg-card/30 flex justify-between items-center">
                    <div>
                      <div className="flex items-baseline gap-2">
-                       <h2 className="text-3xl font-bold text-foreground">1.00 EURC</h2>
-                       <span className="text-sm text-muted-foreground"> = 7.6055 USDC</span>
+                       <h2 className="text-3xl font-bold text-foreground">1.00 {fromToken.symbol}</h2>
+                       <span className="text-sm text-muted-foreground"> = {currentRate.toFixed(4)} {toToken.symbol}</span>
                      </div>
                      <div className="flex items-center gap-2 mt-1">
-                       <span className="text-sm font-medium text-red-500 flex items-center gap-1">
-                         <ArrowDown className="w-3 h-3" /> -0.32 (4.15%)
+                       <span className={`text-sm font-medium ${isPositive ? 'text-green-500' : 'text-red-500'} flex items-center gap-1`}>
+                         {isPositive ? <TrendingUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />} 
+                         {isPositive ? '+' : ''}{priceChange} ({priceChangePercent}%)
                        </span>
-                       <span className="text-xs text-muted-foreground">Past 24 Hours</span>
+                       <span className="text-xs text-muted-foreground">Past {chartTimeframe}</span>
                      </div>
                    </div>
                    <div className="flex gap-2">
-                     {["1H", "1D", "1W", "1M", "1Y"].map(period => (
+                     {["1H", "1D", "1W", "1M"].map(period => (
                        <Button 
                         key={period} 
                         variant="ghost" 
                         size="sm" 
-                        className={`h-8 px-3 rounded-lg text-xs font-semibold ${period === '1D' ? 'bg-secondary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                        onClick={() => setChartTimeframe(period)}
+                        className={`h-8 px-3 rounded-lg text-xs font-semibold ${chartTimeframe === period ? 'bg-secondary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                        >
                          {period}
                        </Button>
@@ -747,11 +777,11 @@ export default function SwapInterface() {
                  
                  <div className="flex-1 w-full min-h-[350px] p-4 relative">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={CHART_DATA}>
+                      <AreaChart data={chartData}>
                         <defs>
                           <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                            <stop offset="5%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0}/>
                           </linearGradient>
                         </defs>
                         <XAxis 
@@ -762,11 +792,12 @@ export default function SwapInterface() {
                           dy={10}
                         />
                         <YAxis 
-                          domain={['dataMin - 0.1', 'dataMax + 0.1']} 
+                          domain={['dataMin', 'dataMax']} 
                           axisLine={false}
                           tickLine={false}
                           tick={{ fill: '#6B7280', fontSize: 12 }}
                           dx={-10}
+                          tickFormatter={(value) => value.toFixed(4)}
                         />
                         <Tooltip 
                           contentStyle={{ 
@@ -777,11 +808,12 @@ export default function SwapInterface() {
                           }}
                           itemStyle={{ color: '#fff' }}
                           labelStyle={{ color: '#9CA3AF', marginBottom: '4px' }}
+                          formatter={(value: number) => [value.toFixed(4), toToken.symbol]}
                         />
                         <Area 
                           type="monotone" 
                           dataKey="price" 
-                          stroke="#ef4444" 
+                          stroke={isPositive ? "#22c55e" : "#ef4444"} 
                           strokeWidth={3}
                           fillOpacity={1} 
                           fill="url(#colorPrice)" 
@@ -797,6 +829,11 @@ export default function SwapInterface() {
                    <h3 className="font-bold text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-primary" /> Recent Trades</h3>
                 </div>
                 <div className="overflow-x-auto">
+                    {trades.length === 0 ? (
+                      <div className="p-8 text-center text-muted-foreground text-sm">
+                        No recent trades
+                      </div>
+                    ) : (
                     <table className="w-full text-sm text-left">
                     <thead className="text-xs text-muted-foreground bg-secondary/30 uppercase">
                         <tr>
@@ -833,6 +870,7 @@ export default function SwapInterface() {
                         ))}
                     </tbody>
                     </table>
+                    )}
                 </div>
             </Card>
         </div>
