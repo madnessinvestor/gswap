@@ -238,13 +238,25 @@ export default function SwapInterface() {
   const [balances, setBalances] = useState({ USDC: "0.00", EURC: "0.00" });
   const [needsApproval, setNeedsApproval] = useState(false);
   const [trades, setTrades] = useState(INITIAL_TRADES);
+  const [myTrades, setMyTrades] = useState<any[]>([]); // Store all user trades
   const [chartTimeframe, setChartTimeframe] = useState("1D");
   const [showMyTrades, setShowMyTrades] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   // Filter trades based on selection
-  const displayedTrades = showMyTrades && account
-    ? trades.filter(t => (t as any).fullTrader?.toLowerCase() === account.toLowerCase() || t.trader.toLowerCase() === account.toLowerCase())
-    : trades;
+  const sourceTrades = showMyTrades && account ? myTrades : trades;
+  const totalPages = Math.ceil(sourceTrades.length / itemsPerPage);
+  
+  const displayedTrades = sourceTrades.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset page when switching tabs
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [showMyTrades]);
   
   // Calculate current exchange rate
   const currentRate = fromToken.symbol === "EURC" && toToken.symbol === "USDC" ? 7.56 : 
@@ -458,7 +470,11 @@ export default function SwapInterface() {
             fullHash: fullHash
         };
         
-        setTrades(prev => [randomTrade, ...prev.slice(0, 19)]); // Keep last 20
+        // Keep only last 100 global trades
+        setTrades(prev => {
+            const newTrades = [randomTrade, ...prev];
+            return newTrades.slice(0, 100);
+        });
       }
     }, 5000);
 
@@ -562,7 +578,12 @@ export default function SwapInterface() {
                 hash: `${hash.slice(0,6)}...${hash.slice(-4)}`,
                 fullHash: hash
               };
-              setTrades(prev => [newTrade, ...prev]);
+              
+              // Add to global trades (limited to 100)
+              setTrades(prev => [newTrade, ...prev].slice(0, 100));
+              
+              // Add to my trades (unlimited)
+              setMyTrades(prev => [newTrade, ...prev]);
 
               toast({ title: "Swap Successful", description: "Balances updated." });
           }, 5000);
@@ -978,6 +999,7 @@ export default function SwapInterface() {
                         </div>
                       </div>
                     ) : (
+                    <>
                     <table className="w-full text-sm text-left border-collapse">
                     <thead className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/50">
                         <tr>
@@ -1060,6 +1082,60 @@ export default function SwapInterface() {
                         ))}
                     </tbody>
                     </table>
+                    
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-6 py-4 border-t border-border/30 bg-card/20">
+                         <div className="text-xs text-muted-foreground">
+                            Showing <span className="font-medium text-foreground">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-foreground">{Math.min(currentPage * itemsPerPage, sourceTrades.length)}</span> of <span className="font-medium text-foreground">{sourceTrades.length}</span> results
+                         </div>
+                         <div className="flex items-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                              disabled={currentPage === 1}
+                              className="h-8 px-3 text-xs bg-background/50 border-border/50"
+                            >
+                              Previous
+                            </Button>
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                 // Simple logic to show first few pages or window around current
+                                 // For simplicity in mockup, just showing first 5 or logic to shift
+                                 let p = i + 1;
+                                 if (totalPages > 5 && currentPage > 3) {
+                                    p = currentPage - 2 + i;
+                                    // Adjust if near end
+                                    if (p > totalPages) p = totalPages - (4 - i);
+                                 }
+                                 
+                                 return (
+                                   <Button
+                                     key={p}
+                                     variant={currentPage === p ? "secondary" : "ghost"}
+                                     size="sm"
+                                     onClick={() => setCurrentPage(p)}
+                                     className={`h-8 w-8 p-0 text-xs ${currentPage === p ? "bg-primary/20 text-primary font-bold" : "text-muted-foreground"}`}
+                                   >
+                                     {p}
+                                   </Button>
+                                 );
+                              })}
+                            </div>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                              disabled={currentPage === totalPages}
+                              className="h-8 px-3 text-xs bg-background/50 border-border/50"
+                            >
+                              Next
+                            </Button>
+                         </div>
+                      </div>
+                    )}
+                    </>
                     )}
                 </div>
             </Card>
