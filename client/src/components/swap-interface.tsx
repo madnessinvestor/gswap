@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { ArrowDown, Settings, ChevronDown, Wallet, Info, RefreshCw, Search, X } from "lucide-react";
+import { ArrowDown, Settings, ChevronDown, Wallet, Info, RefreshCw, Search, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -15,21 +14,33 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 const TOKENS = [
-  { symbol: "ARC", name: "Arc Protocol", icon: "⚡" },
-  { symbol: "ETH", name: "Ethereum", icon: "⟠" },
   { symbol: "USDC", name: "USD Coin", icon: "$ " },
+  { symbol: "ETH", name: "Ethereum", icon: "⟠" },
   { symbol: "WBTC", name: "Wrapped BTC", icon: "₿" },
   { symbol: "USDT", name: "Tether", icon: "₮" },
   { symbol: "DAI", name: "Dai", icon: "◈" },
 ];
 
+const ARC_TESTNET_PARAMS = {
+  chainId: '0x4ceec2', // 5042002 in hex
+  chainName: 'Arc Testnet',
+  nativeCurrency: {
+    name: 'USDC',
+    symbol: 'USDC',
+    decimals: 18,
+  },
+  rpcUrls: ['https://rpc.testnet.arc.network'],
+  blockExplorerUrls: ['https://testnet.arcscan.app'],
+};
+
 export default function SwapInterface() {
   const [inputAmount, setInputAmount] = useState("");
   const [outputAmount, setOutputAmount] = useState("");
-  const [fromToken, setFromToken] = useState(TOKENS[1]); // ETH
-  const [toToken, setToToken] = useState(TOKENS[0]); // ARC
+  const [fromToken, setFromToken] = useState(TOKENS[0]); // USDC (Native currency of Arc)
+  const [toToken, setToToken] = useState(TOKENS[1]); // ETH
   const [isSwapping, setIsSwapping] = useState(false);
   const [walletConnected, setWalletConnected] = useState(false);
+  const [slippage, setSlippage] = useState("0.5");
 
   // Mock exchange rate calculation
   useEffect(() => {
@@ -40,17 +51,53 @@ export default function SwapInterface() {
     const num = parseFloat(inputAmount);
     if (isNaN(num)) return;
 
-    // Mock rates: 1 ETH = 2000 ARC
-    const rate = fromToken.symbol === "ETH" && toToken.symbol === "ARC" ? 2000 : 
-                 fromToken.symbol === "ARC" && toToken.symbol === "ETH" ? 0.0005 : 
-                 Math.random() * 10 + 0.5; // Random rate for others
+    // Mock rates
+    const rate = fromToken.symbol === "USDC" && toToken.symbol === "ETH" ? 0.0005 : 
+                 fromToken.symbol === "ETH" && toToken.symbol === "USDC" ? 2000 : 
+                 Math.random() * 2 + 0.5;
     
     setOutputAmount((num * rate).toFixed(6));
   }, [inputAmount, fromToken, toToken]);
 
+  const connectWallet = async () => {
+    const ethereum = (window as any).ethereum;
+    if (typeof ethereum !== 'undefined') {
+      try {
+        // Request account access
+        await ethereum.request({ method: 'eth_requestAccounts' });
+        
+        // Switch to Arc Testnet
+        try {
+          await ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: ARC_TESTNET_PARAMS.chainId }],
+          });
+        } catch (switchError: any) {
+          // This error code indicates that the chain has not been added to MetaMask.
+          if (switchError.code === 4902) {
+            try {
+              await ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [ARC_TESTNET_PARAMS],
+              });
+            } catch (addError) {
+              console.error(addError);
+            }
+          }
+        }
+        setWalletConnected(true);
+      } catch (error) {
+        console.error(error);
+      }
+    } else {
+      // Fallback for demo purposes if no wallet is installed
+      setWalletConnected(true);
+    }
+  };
+
   const handleSwap = () => {
     if (!walletConnected) {
-      setWalletConnected(true);
+      connectWallet();
       return;
     }
     
@@ -150,12 +197,33 @@ export default function SwapInterface() {
            <div className="space-y-2">
              <div className="flex justify-between text-sm">
                <span className="text-muted-foreground">Slippage tolerance</span>
-               <span className="text-primary font-medium">Auto</span>
+               <span className="text-primary font-medium">{slippage}%</span>
              </div>
              <div className="flex gap-2">
-               <Button variant="secondary" size="sm" className="rounded-full flex-1 bg-primary/20 text-primary hover:bg-primary/30">Auto</Button>
-               <Button variant="outline" size="sm" className="rounded-full flex-1 border-secondary bg-transparent hover:bg-secondary">0.5%</Button>
-               <Button variant="outline" size="sm" className="rounded-full flex-1 border-secondary bg-transparent hover:bg-secondary">1.0%</Button>
+               <Button 
+                variant={slippage === "0.5" ? "secondary" : "outline"} 
+                size="sm" 
+                className={`rounded-full flex-1 ${slippage === "0.5" ? "bg-primary/20 text-primary hover:bg-primary/30" : "border-secondary bg-transparent hover:bg-secondary"}`}
+                onClick={() => setSlippage("0.5")}
+               >
+                 0.5%
+               </Button>
+               <Button 
+                variant={slippage === "1.0" ? "secondary" : "outline"} 
+                size="sm" 
+                className={`rounded-full flex-1 ${slippage === "1.0" ? "bg-primary/20 text-primary hover:bg-primary/30" : "border-secondary bg-transparent hover:bg-secondary"}`}
+                onClick={() => setSlippage("1.0")}
+               >
+                 1.0%
+               </Button>
+               <Button 
+                variant={slippage === "2.0" ? "secondary" : "outline"} 
+                size="sm" 
+                className={`rounded-full flex-1 ${slippage === "2.0" ? "bg-primary/20 text-primary hover:bg-primary/30" : "border-secondary bg-transparent hover:bg-secondary"}`}
+                onClick={() => setSlippage("2.0")}
+               >
+                 2.0%
+               </Button>
              </div>
            </div>
            <div className="space-y-2">
@@ -179,27 +247,29 @@ export default function SwapInterface() {
       <nav className="w-full max-w-7xl mx-auto p-4 flex justify-between items-center z-10 relative">
         <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
           <div className="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-            <span className="text-white font-black text-xl italic">A</span>
+            <span className="text-white font-black text-xl italic">eM</span>
           </div>
-          <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">Arc Swap</span>
+          <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">eMadness Swap</span>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center p-1 bg-secondary/50 backdrop-blur-md rounded-full border border-white/5">
-            {['Swap', 'Tokens', 'Pools'].map((item, i) => (
-              <a key={item} href="#" className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${i === 0 ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-                {item}
-              </a>
-            ))}
-          </div>
+          <a 
+            href="https://faucet.circle.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hidden md:flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors px-3 py-1.5 rounded-full hover:bg-primary/10"
+          >
+            <span>USDC Faucet</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
           
           <Button 
             variant={walletConnected ? "outline" : "secondary"} 
             className={`rounded-full font-semibold gap-2 transition-all ${walletConnected ? 'border-primary/50 text-primary bg-primary/10' : ''}`}
-            onClick={() => setWalletConnected(!walletConnected)}
+            onClick={connectWallet}
           >
             <Wallet className="w-4 h-4" />
-            {walletConnected ? "0x12...4F8A" : "Connect Wallet"}
+            {walletConnected ? "0x12...4F8A" : "Connect to Arc"}
           </Button>
         </div>
       </nav>
@@ -216,7 +286,6 @@ export default function SwapInterface() {
             <div className="p-4 flex justify-between items-center mb-2">
               <div className="flex items-center gap-4">
                 <span className="font-semibold text-foreground text-lg">Swap</span>
-                <span className="font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors text-sm">Limit</span>
               </div>
               <SettingsModal />
             </div>
@@ -225,7 +294,7 @@ export default function SwapInterface() {
             <div className="bg-black/20 rounded-2xl p-4 mb-1 transition-colors hover:bg-black/30 group border border-transparent hover:border-white/5">
               <div className="flex justify-between mb-2">
                 <span className="text-xs font-medium text-muted-foreground">You pay</span>
-                <span className="text-xs font-medium text-muted-foreground">Balance: {walletConnected ? "2.45" : "0"}</span>
+                <span className="text-xs font-medium text-muted-foreground">Balance: {walletConnected ? "100.00" : "0"}</span>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <input
@@ -241,7 +310,7 @@ export default function SwapInterface() {
                 <TokenSelector selected={fromToken} onSelect={setFromToken} />
               </div>
               <div className="flex justify-between mt-2 h-5">
-                 <span className="text-sm text-muted-foreground font-medium">{inputAmount ? `$${(parseFloat(inputAmount) * 1850).toFixed(2)}` : '$0.00'}</span>
+                 <span className="text-sm text-muted-foreground font-medium">{inputAmount ? `$${(parseFloat(inputAmount) * 1).toFixed(2)}` : '$0.00'}</span>
               </div>
             </div>
 
@@ -272,7 +341,7 @@ export default function SwapInterface() {
                 <TokenSelector selected={toToken} onSelect={setToToken} />
               </div>
               <div className="flex justify-between mt-2 h-5">
-                 <span className="text-sm text-muted-foreground font-medium">{outputAmount ? `$${(parseFloat(outputAmount) * (fromToken.symbol === 'ETH' ? 1 : 1850)).toFixed(2)}` : '$0.00'}</span>
+                 <span className="text-sm text-muted-foreground font-medium">{outputAmount ? `$${(parseFloat(outputAmount) * (toToken.symbol === 'USDC' ? 1 : 2000)).toFixed(2)}` : '$0.00'}</span>
               </div>
             </div>
 
@@ -287,11 +356,11 @@ export default function SwapInterface() {
                 >
                   <div className="flex items-center gap-1">
                     <Info className="w-3 h-3" />
-                    <span>1 {fromToken.symbol} = {(parseFloat(outputAmount)/parseFloat(inputAmount) || 0).toFixed(4)} {toToken.symbol}</span>
-                    <span className="text-muted-foreground ml-1">($2.15)</span>
+                    <span>1 {fromToken.symbol} = {(parseFloat(outputAmount)/parseFloat(inputAmount) || 0).toFixed(6)} {toToken.symbol}</span>
+                    <span className="text-muted-foreground ml-1">($0.00)</span>
                   </div>
                   <div className="flex items-center gap-1 cursor-pointer hover:opacity-80 bg-primary/10 px-2 py-0.5 rounded-md">
-                     <span className="text-primary">Gas: $2.50</span>
+                     <span className="text-primary">Slippage: {slippage}%</span>
                   </div>
                 </motion.div>
               )}
@@ -314,7 +383,7 @@ export default function SwapInterface() {
                     <span>Swapping...</span>
                   </div>
                 ) : (
-                  !walletConnected ? "Connect Wallet" :
+                  !walletConnected ? "Connect to Arc" :
                   !inputAmount ? "Enter an amount" : "Swap"
                 )}
               </Button>
@@ -322,7 +391,7 @@ export default function SwapInterface() {
           </Card>
           
           <div className="mt-6 text-center">
-            <p className="text-xs text-muted-foreground/50 font-medium">Powered by Arc Protocol</p>
+            <p className="text-xs text-muted-foreground/50 font-medium">Powered by eMadness</p>
           </div>
         </motion.div>
       </main>
