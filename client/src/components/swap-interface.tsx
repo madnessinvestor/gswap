@@ -483,6 +483,7 @@ export default function SwapInterface() {
 
         setAccount(address);
         setWalletConnected(true);
+        localStorage.setItem('arc_wallet_connected', 'true'); // Persist connection state
         fetchBalances(address);
         
         toast({ title: "Connected", description: `Wallet connected: ${address.slice(0,6)}...` });
@@ -494,6 +495,46 @@ export default function SwapInterface() {
         toast({ title: "Connection Failed", description: error.message, variant: "destructive" });
     }
   };
+
+  const disconnectWallet = () => {
+    setAccount("");
+    setWalletConnected(false);
+    localStorage.removeItem('arc_wallet_connected');
+    toast({ title: "Disconnected", description: "Wallet disconnected" });
+  };
+
+  // Auto-connect effect
+  useEffect(() => {
+    const checkConnection = async () => {
+        const shouldConnect = localStorage.getItem('arc_wallet_connected') === 'true';
+        if (!shouldConnect) return;
+
+        const client = getWalletClient();
+        if (!client) return;
+
+        try {
+            // Check if we have permissions already
+            const accounts = await (client as any).request({ method: 'eth_accounts' });
+            if (accounts && accounts.length > 0) {
+                const address = accounts[0];
+                setAccount(address);
+                setWalletConnected(true);
+                fetchBalances(address);
+                
+                // Try to ensure chain is correct silently
+                try {
+                    await client.switchChain({ id: arcTestnet.id });
+                } catch (e) {
+                    console.warn("Auto-switch chain failed", e);
+                }
+            }
+        } catch (e) {
+            console.error("Auto-connect failed", e);
+        }
+    };
+    
+    checkConnection();
+  }, []);
 
   // Exchange Rate Logic
   useEffect(() => {
@@ -772,14 +813,18 @@ export default function SwapInterface() {
           </Button>
           
           {walletConnected && account ? (
-            <div className="flex items-center gap-2 bg-secondary/40 rounded-full p-1 pl-3 border border-border/50">
-               <div className="flex items-center gap-2 text-sm font-medium border-r border-border/50 pr-3">
-                 <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                 Arc Testnet
+            <div 
+                className="flex items-center gap-2 bg-secondary/40 rounded-full p-1 pl-3 border border-border/50 cursor-pointer hover:bg-red-500/10 hover:border-red-500/30 transition-all group"
+                onClick={disconnectWallet}
+                title="Click to disconnect"
+            >
+               <div className="flex items-center gap-2 text-sm font-medium border-r border-border/50 pr-3 group-hover:border-red-500/30 transition-colors">
+                 <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] group-hover:bg-red-500 group-hover:shadow-[0_0_8px_rgba(239,68,68,0.5)] transition-colors" />
+                 <span className="group-hover:text-red-500 transition-colors">Disconnect</span>
                </div>
                <div className="flex items-center gap-2 pr-2">
-                 <span className="text-sm font-semibold">{balances.USDC} USDC</span>
-                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-red-500" />
+                 <span className="text-sm font-semibold group-hover:opacity-50 transition-opacity">{balances.USDC} USDC</span>
+                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-red-500 group-hover:opacity-50 transition-opacity" />
                </div>
             </div>
           ) : (
