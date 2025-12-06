@@ -271,8 +271,10 @@ export default function SwapInterface() {
     
     for (let i = 0; i < numHistoricalTrades; i++) {
         const isBuy = seededRandom() > 0.5;
-        const amount = (seededRandom() * 500 + 10).toFixed(4);
-        const usdcAmt = (parseFloat(amount) * (isBuy ? 1/7.56 : 7.56)).toFixed(4);
+        const amount = (seededRandom() * 500 + 10).toFixed(4); // EURC Amount
+        // Consistent rate: 1 EURC = ~7.56 USDC (High volatility testnet rate)
+        // Regardless of direction, USDC amount is EURC * Rate
+        const usdcAmt = (parseFloat(amount) * 7.56).toFixed(4);
         
         // Generate a stable hash based on index and seed
         const hashSeed = Math.floor(seededRandom() * 1000000).toString(16);
@@ -555,8 +557,9 @@ export default function SwapInterface() {
       // 30% chance to add a new trade every 5 seconds
       if (Math.random() > 0.7) {
         const isBuy = Math.random() > 0.5;
-        const amount = (Math.random() * 100 + 1).toFixed(4);
-        const usdcAmt = (parseFloat(amount) * (isBuy ? 1/7.56 : 7.56)).toFixed(4);
+        const amount = (Math.random() * 100 + 1).toFixed(4); // EURC Amount
+        // Consistent rate: 1 EURC = ~7.56 USDC
+        const usdcAmt = (parseFloat(amount) * 7.56).toFixed(4);
         
         const hashHex = randomHex(64);
         const fullHash = `0x${hashHex}`;
