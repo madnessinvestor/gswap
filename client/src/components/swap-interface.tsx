@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { createWalletClient, custom, parseUnits, encodeFunctionData, formatUnits } from 'viem';
-import { arc } from 'viem/chains'; // We might need to define custom chain if arc isn't in viem/chains yet
+// import { arc } from 'viem/chains'; // Removed as we define custom chain
 
 // Define Arc Testnet Custom Chain for Viem
 const arcTestnet = {
@@ -125,18 +125,26 @@ const ROUTER_ABI = [
   }
 ];
 
-// Chart Data
-const CHART_DATA = Array.from({ length: 24 }, (_, i) => ({
-  time: `${i}:00`,
-  price: 1.05 + Math.random() * 0.02 - 0.01,
-}));
+// Chart Data matching the user's image (High ~8.45, Drop to ~7.60)
+const CHART_DATA = [
+  ...Array.from({ length: 16 }, (_, i) => ({
+    time: `${i}:00`,
+    price: 8.45 + Math.random() * 0.02 - 0.01,
+  })),
+  { time: '16:00', price: 8.42 },
+  { time: '17:00', price: 7.80 },
+  ...Array.from({ length: 7 }, (_, i) => ({
+    time: `${17 + i + 1}:00`,
+    price: 7.6055 + Math.random() * 0.005 - 0.0025,
+  }))
+];
 
 // Mock Trade History
 const RECENT_TRADES = [
-  { hash: "0x44cb...7e7f", type: "Buy", amountIn: "5.0000", tokenIn: "USDC", amountOut: "4.7619", tokenOut: "EURC", time: "13m ago" },
-  { hash: "0x8a21...9b3c", type: "Sell", amountIn: "10.0000", tokenIn: "EURC", amountOut: "10.4820", tokenOut: "USDC", time: "15m ago" },
-  { hash: "0x1d4f...2e8a", type: "Buy", amountIn: "100.0000", tokenIn: "USDC", amountOut: "95.2380", tokenOut: "EURC", time: "22m ago" },
-  { hash: "0x9f3e...1d2b", type: "Sell", amountIn: "50.0000", tokenIn: "EURC", amountOut: "52.4100", tokenOut: "USDC", time: "30m ago" },
+  { hash: "0x44cb...7e7f", type: "Buy", amountIn: "5.0000", tokenIn: "USDC", amountOut: "0.6574", tokenOut: "EURC", time: "13m ago" },
+  { hash: "0x8a21...9b3c", type: "Sell", amountIn: "10.0000", tokenIn: "EURC", amountOut: "76.0550", tokenOut: "USDC", time: "15m ago" },
+  { hash: "0x1d4f...2e8a", type: "Buy", amountIn: "100.0000", tokenIn: "USDC", amountOut: "13.1483", tokenOut: "EURC", time: "22m ago" },
+  { hash: "0x9f3e...1d2b", type: "Sell", amountIn: "50.0000", tokenIn: "EURC", amountOut: "380.2750", tokenOut: "USDC", time: "30m ago" },
 ];
 
 export default function SwapInterface() {
@@ -171,7 +179,8 @@ export default function SwapInterface() {
 
     try {
       // Native Balance (USDC)
-      const nativeBal = await client.request({
+      // Cast client to any to avoid strict type checks for mockup
+      const nativeBal = await (client as any).request({
         method: 'eth_getBalance',
         params: [userAddress as `0x${string}`, 'latest']
       });
@@ -186,7 +195,7 @@ export default function SwapInterface() {
 
       let eurcFormatted = "0.00";
       try {
-        const tokenBal = await client.request({
+        const tokenBal = await (client as any).request({
           method: 'eth_call',
           params: [{
             to: TOKENS[1].address as `0x${string}`,
@@ -224,7 +233,7 @@ export default function SwapInterface() {
             args: [account, ROUTER_ADDRESS]
         });
 
-        const allowanceResult = await client.request({
+        const allowanceResult = await (client as any).request({
             method: 'eth_call',
             params: [{
                 to: fromToken.address as `0x${string}`,
@@ -280,6 +289,7 @@ export default function SwapInterface() {
   };
 
   // Exchange Rate Logic
+  // Updated to match the user's provided image where EURC seems to be ~7.6055 USDC
   useEffect(() => {
     if (!inputAmount) {
       setOutputAmount("");
@@ -287,8 +297,11 @@ export default function SwapInterface() {
     }
     const num = parseFloat(inputAmount);
     if (isNaN(num)) return;
-    const rate = fromToken.symbol === "USDC" && toToken.symbol === "EURC" ? 0.9523 : 
-                 fromToken.symbol === "EURC" && toToken.symbol === "USDC" ? 1.05 : 1;
+    
+    // Rate from image: 1 EURC = 7.6055 USDC
+    const rate = fromToken.symbol === "EURC" && toToken.symbol === "USDC" ? 7.6055 : 
+                 fromToken.symbol === "USDC" && toToken.symbol === "EURC" ? (1 / 7.6055) : 1;
+                 
     setOutputAmount((num * rate).toFixed(4));
   }, [inputAmount, fromToken, toToken]);
 
@@ -341,7 +354,7 @@ export default function SwapInterface() {
           const path = [fromToken.address, toToken.address];
 
           let data;
-          let value = 0n;
+          let value = BigInt(0);
 
           if (fromToken.isNative) {
               // swapExactETHForTokens
@@ -626,9 +639,9 @@ export default function SwapInterface() {
                              <h3 className="font-bold text-xl">EURC / USDC</h3>
                         </div>
                         <div className="flex items-baseline gap-3">
-                             <span className="text-3xl font-bold tracking-tight">$1.0502</span>
+                             <span className="text-3xl font-bold tracking-tight">$7.6055</span>
                              <span className="text-red-500 font-medium text-sm flex items-center gap-1">
-                                 -0.42% <ArrowDown className="w-3 h-3" />
+                                 -10.07% <ArrowDown className="w-3 h-3" />
                              </span>
                         </div>
                         <div className="flex flex-col mt-2 gap-1">
