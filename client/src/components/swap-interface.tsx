@@ -49,7 +49,7 @@ const TOKENS = [
     icon: "$", 
     address: USDC_ADDRESS, 
     decimals: 18,
-    isNative: true
+    isNative: false
   },
   { 
     symbol: "EURC", 
@@ -227,7 +227,7 @@ export default function SwapInterface() {
   };
 
   const checkAllowance = async () => {
-    if (!account || fromToken.isNative) {
+    if (!account) {
       setNeedsApproval(false);
       return;
     }
@@ -369,31 +369,14 @@ export default function SwapInterface() {
           let data;
           let value = BigInt(0);
 
-          if (fromToken.isNative) {
-              // swapExactETHForTokens
-              data = encodeFunctionData({
-                  abi: ROUTER_ABI,
-                  functionName: 'swapExactETHForTokens',
-                  args: [amountOutMin, path, account, deadline]
-              });
-              value = amountIn;
-          } else {
-              // swapExactTokensForETH (if to is native) or TokensForTokens
-              // Since on Arc USDC is native, EURC -> USDC is TokensForETH
-              if (toToken.isNative) {
-                   data = encodeFunctionData({
-                      abi: ROUTER_ABI,
-                      functionName: 'swapExactTokensForETH',
-                      args: [amountIn, amountOutMin, path, account, deadline]
-                  });
-              } else {
-                  data = encodeFunctionData({
-                      abi: ROUTER_ABI,
-                      functionName: 'swapExactTokensForTokens',
-                      args: [amountIn, amountOutMin, path, account, deadline]
-                  });
-              }
-          }
+          // Always use swapExactTokensForTokens (Treating USDC as ERC20)
+          data = encodeFunctionData({
+              abi: ROUTER_ABI,
+              functionName: 'swapExactTokensForTokens',
+              args: [amountIn, amountOutMin, path, account, deadline]
+          });
+          
+          // Value is 0 because we are approving and transferring tokens (even for USDC)
 
           const hash = await client.sendTransaction({
               account: account as `0x${string}`,
