@@ -406,6 +406,32 @@ export default function SwapInterface() {
     setOutputAmount((num * currentRate).toFixed(4));
   }, [inputAmount, fromToken, toToken, currentRate]);
 
+  useEffect(() => {
+    // Simulate live market trades
+    const interval = setInterval(() => {
+      // 30% chance to add a new trade every 5 seconds
+      if (Math.random() > 0.7) {
+        const isBuy = Math.random() > 0.5;
+        const amount = (Math.random() * 100 + 1).toFixed(4);
+        const usdcAmt = (parseFloat(amount) * (isBuy ? 1/7.56 : 7.56)).toFixed(4);
+        
+        const randomTrade = {
+            trader: `0x${Math.random().toString(16).substr(2, 4)}...${Math.random().toString(16).substr(2, 4)}`,
+            type: isBuy ? 'Buy' : 'Sell',
+            tokenAmount: amount,
+            tokenSymbol: 'EURC', // Simplified to assume EURC/USDC pair primarily
+            usdcAmount: usdcAmt, 
+            time: "Just now",
+            hash: `0x${Math.random().toString(16).substr(2, 6)}...`
+        };
+        
+        setTrades(prev => [randomTrade, ...prev.slice(0, 19)]); // Keep last 20
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleApprove = async () => {
       const client = getWalletClient();
       if (!client || !account) return;
@@ -596,12 +622,12 @@ export default function SwapInterface() {
       {/* Navbar */}
       <nav className="w-full max-w-7xl mx-auto p-4 flex justify-between items-center z-10">
         <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden border border-primary/20">
+          <div className="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden border border-primary/20">
             <img src={logoImage} alt="Arc Swap Logo" className="w-full h-full object-cover" />
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-bold tracking-tight leading-none">Arc Swap</span>
-            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Testnet</span>
+            <span className="text-2xl font-bold tracking-tight leading-none">Arc Swap</span>
+            <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Testnet</span>
           </div>
         </div>
         
