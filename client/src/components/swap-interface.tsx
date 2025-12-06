@@ -245,7 +245,8 @@ export default function SwapInterface() {
   const itemsPerPage = 20;
 
   // Filter trades based on selection
-  const sourceTrades = showMyTrades && account ? myTrades : trades;
+  const userTrades = myTrades.filter(t => t.fullTrader === account);
+  const sourceTrades = showMyTrades && account ? userTrades : trades;
   const totalPages = Math.ceil(sourceTrades.length / itemsPerPage);
   
   const displayedTrades = sourceTrades.slice(
@@ -582,7 +583,7 @@ export default function SwapInterface() {
               // Add to global trades (limited to 100)
               setTrades(prev => [newTrade, ...prev].slice(0, 100));
               
-              // Add to my trades (unlimited)
+              // Add to my trades (unlimited for session, filtered by account view)
               setMyTrades(prev => [newTrade, ...prev]);
 
               toast({ title: "Swap Successful", description: "Balances updated." });
