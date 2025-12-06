@@ -148,8 +148,45 @@ const CHART_DATA = [
   }))
 ];
 
-// Empty initial trades as requested
-const INITIAL_TRADES: any[] = [];
+// Initial trades with realistic data
+const INITIAL_TRADES = [
+  {
+    trader: "0x8795...241d",
+    type: "Buy",
+    tokenAmount: "7.5225",
+    tokenSymbol: "EURC",
+    usdcAmount: "9.3200",
+    time: "1m ago",
+    hash: "0x123...abc"
+  },
+  {
+    trader: "0xeca1...0347",
+    type: "Sell",
+    tokenAmount: "15.0000",
+    tokenSymbol: "EURC",
+    usdcAmount: "18.4731",
+    time: "5m ago",
+    hash: "0x456...def"
+  },
+  {
+    trader: "0xb141...afa2",
+    type: "Sell",
+    tokenAmount: "10.0000",
+    tokenSymbol: "EURC",
+    usdcAmount: "12.3160",
+    time: "12m ago",
+    hash: "0x789...ghi"
+  },
+  {
+    trader: "0xb063...b7c1",
+    type: "Buy",
+    tokenAmount: "4.0354",
+    tokenSymbol: "EURC",
+    usdcAmount: "5.0000",
+    time: "25m ago",
+    hash: "0xabc...123"
+  }
+];
 
 // Chart generation helpers
 const generateChartData = (basePrice: number, volatility: number) => {
@@ -453,14 +490,15 @@ export default function SwapInterface() {
               fetchBalances(account);
               
               // Add to trades
+              const isBuy = fromToken.symbol === 'USDC';
               const newTrade = {
-                hash: `${hash.slice(0,6)}...${hash.slice(-4)}`,
-                type: fromToken.symbol === 'USDC' ? 'Buy' : 'Sell',
-                amountIn: parseFloat(inputAmount).toFixed(4),
-                tokenIn: fromToken.symbol,
-                amountOut: parseFloat(outputAmount).toFixed(4),
-                tokenOut: toToken.symbol,
-                time: "Just now"
+                trader: `${account.slice(0,6)}...${account.slice(-4)}`,
+                type: isBuy ? 'Buy' : 'Sell',
+                tokenAmount: isBuy ? parseFloat(outputAmount).toFixed(4) : parseFloat(inputAmount).toFixed(4),
+                tokenSymbol: isBuy ? toToken.symbol : fromToken.symbol,
+                usdcAmount: isBuy ? parseFloat(inputAmount).toFixed(4) : parseFloat(outputAmount).toFixed(4),
+                time: "Just now",
+                hash: `${hash.slice(0,6)}...${hash.slice(-4)}`
               };
               setTrades(prev => [newTrade, ...prev]);
 
@@ -829,7 +867,8 @@ export default function SwapInterface() {
             {/* Trade History */}
             <Card className="w-full bg-card/50 backdrop-blur-md border-border/50 shadow-xl rounded-[24px] overflow-hidden">
                 <div className="p-5 border-b border-border/50 bg-card/30 flex items-center justify-between">
-                   <h3 className="font-bold text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-primary" /> Recent Trades</h3>
+                   <h3 className="font-bold text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-primary" /> Trade History & Traders</h3>
+                   <span className="text-xs text-muted-foreground">Showing recent trades</span>
                 </div>
                 <div className="overflow-x-auto">
                     {trades.length === 0 ? (
@@ -840,35 +879,53 @@ export default function SwapInterface() {
                     <table className="w-full text-sm text-left">
                     <thead className="text-xs text-muted-foreground bg-secondary/30 uppercase">
                         <tr>
-                        <th className="px-5 py-3 font-medium">Tx Hash</th>
-                        <th className="px-5 py-3 font-medium">Type</th>
-                        <th className="px-5 py-3 font-medium">Amount In</th>
-                        <th className="px-5 py-3 font-medium">Amount Out</th>
-                        <th className="px-5 py-3 font-medium text-right">Time</th>
+                        <th className="px-5 py-4 font-medium">Trader</th>
+                        <th className="px-5 py-4 font-medium text-center">Type</th>
+                        <th className="px-5 py-4 font-medium">Token Amount</th>
+                        <th className="px-5 py-4 font-medium">USDC Amount</th>
+                        <th className="px-5 py-4 font-medium text-right">Time</th>
+                        <th className="px-5 py-4 font-medium text-right">Tx</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border/30">
                         {trades.map((trade, i) => (
-                        <tr key={i} className="hover:bg-secondary/20 transition-colors">
-                            <td className="px-5 py-3 font-mono text-primary flex items-center gap-1.5">
-                                {trade.hash} <ExternalLink className="w-3 h-3 opacity-50" />
+                        <tr key={i} className="hover:bg-secondary/20 transition-colors group">
+                            <td className="px-5 py-4 font-mono text-primary/80 group-hover:text-primary transition-colors flex items-center gap-2">
+                                {trade.trader} <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                             </td>
-                            <td className={`px-5 py-3 font-medium ${trade.type === 'Buy' ? 'text-green-500' : 'text-red-500'}`}>
-                                {trade.type}
+                            <td className="px-5 py-4 text-center">
+                                <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide ${
+                                  trade.type === 'Buy' 
+                                    ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
+                                    : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                                }`}>
+                                  {trade.type}
+                                </span>
                             </td>
-                            <td className="px-5 py-3">
-                            <div className="flex items-center gap-1.5">
-                                <span className="font-medium">{trade.amountIn}</span>
-                                <span className="text-xs text-muted-foreground">{trade.tokenIn}</span>
+                            <td className="px-5 py-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center text-[10px] shadow-sm">
+                                  {trade.tokenSymbol === 'EURC' ? '€' : '$'}
+                                </div>
+                                <span className="font-medium text-foreground">{trade.tokenAmount}</span>
+                                <span className="text-xs text-muted-foreground font-semibold">{trade.tokenSymbol}</span>
                             </div>
                             </td>
-                            <td className="px-5 py-3">
-                            <div className="flex items-center gap-1.5">
-                                <span className="font-medium">{trade.amountOut}</span>
-                                <span className="text-xs text-muted-foreground">{trade.tokenOut}</span>
+                            <td className="px-5 py-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-[10px] shadow-sm">
+                                  $
+                                </div>
+                                <span className="font-medium text-foreground">{trade.usdcAmount}</span>
+                                <span className="text-xs text-muted-foreground font-semibold">USDC</span>
                             </div>
                             </td>
-                            <td className="px-5 py-3 text-right text-muted-foreground">{trade.time}</td>
+                            <td className="px-5 py-4 text-right text-muted-foreground text-xs">{trade.time}</td>
+                            <td className="px-5 py-4 text-right">
+                                <Button variant="ghost" size="icon" className="w-8 h-8 opacity-50 hover:opacity-100 hover:text-primary transition-all rounded-full">
+                                    <ExternalLink className="w-4 h-4" />
+                                </Button>
+                            </td>
                         </tr>
                         ))}
                     </tbody>
