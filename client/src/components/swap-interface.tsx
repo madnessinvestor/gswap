@@ -37,6 +37,7 @@ const arcTestnet = {
 } as const;
 
 const ROUTER_ADDRESS = "0x284C5Afc100ad14a458255075324fA0A9dfd66b1";
+const POOL_ADDRESS = "0x18eAE2e870Ec4Bc31a41B12773c4F5c40Bf19aCD";
 
 // Token Definitions
 const TOKENS = [
@@ -129,6 +130,14 @@ const CHART_DATA = Array.from({ length: 24 }, (_, i) => ({
   time: `${i}:00`,
   price: 1.05 + Math.random() * 0.02 - 0.01,
 }));
+
+// Mock Trade History
+const RECENT_TRADES = [
+  { hash: "0x44cb...7e7f", type: "Buy", amountIn: "5.0000", tokenIn: "USDC", amountOut: "4.7619", tokenOut: "EURC", time: "13m ago" },
+  { hash: "0x8a21...9b3c", type: "Sell", amountIn: "10.0000", tokenIn: "EURC", amountOut: "10.4820", tokenOut: "USDC", time: "15m ago" },
+  { hash: "0x1d4f...2e8a", type: "Buy", amountIn: "100.0000", tokenIn: "USDC", amountOut: "95.2380", tokenOut: "EURC", time: "22m ago" },
+  { hash: "0x9f3e...1d2b", type: "Sell", amountIn: "50.0000", tokenIn: "EURC", amountOut: "52.4100", tokenOut: "USDC", time: "30m ago" },
+];
 
 export default function SwapInterface() {
   const { toast } = useToast();
@@ -604,8 +613,8 @@ export default function SwapInterface() {
             </Card>
         </div>
 
-        {/* Chart Card (Right) */}
-        <div className="lg:col-span-7 order-2">
+        {/* Right Column (Chart + History) */}
+        <div className="lg:col-span-7 order-2 flex flex-col gap-6">
             <Card className="w-full h-full min-h-[500px] bg-card/50 backdrop-blur-md border-border/50 shadow-xl rounded-[24px] p-6 flex flex-col">
                 <div className="flex justify-between items-start mb-8">
                     <div>
@@ -622,7 +631,13 @@ export default function SwapInterface() {
                                  -0.42% <ArrowDown className="w-3 h-3" />
                              </span>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">24h Vol: $12,402</p>
+                        <div className="flex flex-col mt-2 gap-1">
+                           <p className="text-xs text-muted-foreground">24h Vol: $12,402</p>
+                           <p className="text-[10px] font-mono text-muted-foreground/60 flex items-center gap-1">
+                             Pool: <span className="underline decoration-dotted cursor-help" title={POOL_ADDRESS}>{POOL_ADDRESS.slice(0,6)}...{POOL_ADDRESS.slice(-4)}</span>
+                             <ExternalLink className="w-2 h-2" />
+                           </p>
+                        </div>
                     </div>
                     <div className="flex bg-secondary/50 p-1 rounded-lg">
                         {['1H', '1D', '1W', '1M'].map(t => (
@@ -670,6 +685,51 @@ export default function SwapInterface() {
                     <div className="font-mono opacity-50">
                         19:30 &nbsp;&nbsp; 20:00 &nbsp;&nbsp; 20:30
                     </div>
+                </div>
+            </Card>
+
+            {/* Trade History */}
+            <Card className="w-full bg-card/50 backdrop-blur-md border-border/50 shadow-xl rounded-[24px] overflow-hidden">
+                <div className="p-5 border-b border-border/50 bg-card/30 flex items-center justify-between">
+                   <h3 className="font-bold text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-primary" /> Recent Trades</h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-muted-foreground bg-secondary/30 uppercase">
+                        <tr>
+                        <th className="px-5 py-3 font-medium">Tx Hash</th>
+                        <th className="px-5 py-3 font-medium">Type</th>
+                        <th className="px-5 py-3 font-medium">Amount In</th>
+                        <th className="px-5 py-3 font-medium">Amount Out</th>
+                        <th className="px-5 py-3 font-medium text-right">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/30">
+                        {RECENT_TRADES.map((trade, i) => (
+                        <tr key={i} className="hover:bg-secondary/20 transition-colors">
+                            <td className="px-5 py-3 font-mono text-primary flex items-center gap-1.5">
+                                {trade.hash} <ExternalLink className="w-3 h-3 opacity-50" />
+                            </td>
+                            <td className={`px-5 py-3 font-medium ${trade.type === 'Buy' ? 'text-green-500' : 'text-red-500'}`}>
+                                {trade.type}
+                            </td>
+                            <td className="px-5 py-3">
+                            <div className="flex items-center gap-1.5">
+                                <span className="font-medium">{trade.amountIn}</span>
+                                <span className="text-xs text-muted-foreground">{trade.tokenIn}</span>
+                            </div>
+                            </td>
+                            <td className="px-5 py-3">
+                            <div className="flex items-center gap-1.5">
+                                <span className="font-medium">{trade.amountOut}</span>
+                                <span className="text-xs text-muted-foreground">{trade.tokenOut}</span>
+                            </div>
+                            </td>
+                            <td className="px-5 py-3 text-right text-muted-foreground">{trade.time}</td>
+                        </tr>
+                        ))}
+                    </tbody>
+                    </table>
                 </div>
             </Card>
         </div>
