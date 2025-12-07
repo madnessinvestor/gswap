@@ -81,6 +81,10 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
       },
       width: chartContainerRef.current.clientWidth,
       height: 400,
+      localization: {
+          // Enforce 3 decimal places for price (0.000 style)
+          priceFormatter: (price: number) => price.toFixed(3),
+      },
       timeScale: {
         timeVisible: true,
         secondsVisible: timeframe === 'RealTime',
@@ -154,7 +158,8 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
         
         // Always add noise to simulate live market behavior
         // This ensures the price feels "alive" in all timeframes
-        return mockPrice + (Math.random() * (mockPrice * 0.005) - (mockPrice * 0.0025));
+        // REDUCED NOISE for stability in higher timeframes
+        return mockPrice + (Math.random() * (mockPrice * 0.001) - (mockPrice * 0.0005));
       }
     }
 
@@ -185,13 +190,17 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
       if (timeframe === 'RealTime') {
           // For RealTime, just use current timestamp (no alignment)
           updateTime = now as Time;
+          // Full update for RealTime
+          series.update({ time: updateTime, value: price });
       } else {
           // For other timeframes, align to grid
+          // ONLY update the current candle if it's a new data point or closing price update
+          // But since we want "stable" candles, we should be careful not to jump wildly.
+          // The reduced noise in getPrice handles the "oscillating too much" issue.
           const interval = getIntervalSeconds(timeframe);
           updateTime = (Math.floor(now / interval) * interval) as Time;
+          series.update({ time: updateTime, value: price });
       }
-      
-      series.update({ time: updateTime, value: price });
     }
 
     // Initial tick
