@@ -924,8 +924,23 @@ export default function SwapInterface() {
     </Dialog>
   );
 
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tempSlippage, setTempSlippage] = useState(slippage);
+
+  // Sync temp slippage when modal opens
+  useEffect(() => {
+      if (isSettingsOpen) {
+          setTempSlippage(slippage);
+      }
+  }, [isSettingsOpen, slippage]);
+
+  const handleSaveSettings = () => {
+      setSlippage(tempSlippage);
+      setIsSettingsOpen(false);
+  };
+
   const SettingsModal = () => (
-    <Dialog>
+    <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
       <DialogTrigger asChild>
          <Button variant="ghost" size="icon" className="w-8 h-8 text-muted-foreground hover:text-foreground rounded-full">
            <Settings className="w-5 h-5" />
@@ -939,24 +954,24 @@ export default function SwapInterface() {
            <div className="space-y-2">
              <div className="flex justify-between text-sm">
                <span className="text-muted-foreground">Slippage tolerance</span>
-               <span className="text-primary font-medium">{slippage === "Auto" ? "Auto" : `${slippage}%`}</span>
+               <span className="text-primary font-medium">{tempSlippage === "Auto" ? "Auto" : `${tempSlippage}%`}</span>
              </div>
              <div className="flex gap-2 mb-2">
                <Button 
-                  variant={slippage === "Auto" ? "secondary" : "outline"} 
+                  variant={tempSlippage === "Auto" ? "secondary" : "outline"} 
                   size="sm" 
-                  className={`flex-1 ${slippage === "Auto" ? "bg-primary/20 text-primary border-primary/20" : "bg-[#130b29]/60 border-[#3b1f69]/50 text-muted-foreground hover:text-foreground hover:bg-[#3b1f69]/50"}`}
-                  onClick={() => setSlippage("Auto")}
+                  className={`flex-1 ${tempSlippage === "Auto" ? "bg-primary/20 text-primary border-primary/20" : "bg-[#130b29]/60 border-[#3b1f69]/50 text-muted-foreground hover:text-foreground hover:bg-[#3b1f69]/50"}`}
+                  onClick={() => setTempSlippage("Auto")}
                  >
                    Auto
                </Button>
                {["0.1", "0.5", "1.0"].map((val) => (
                  <Button 
                   key={val}
-                  variant={slippage === val ? "secondary" : "outline"} 
+                  variant={tempSlippage === val ? "secondary" : "outline"} 
                   size="sm" 
-                  className={`flex-1 ${slippage === val ? "bg-primary/20 text-primary border-primary/20" : "bg-[#130b29]/60 border-[#3b1f69]/50 text-muted-foreground hover:text-foreground hover:bg-[#3b1f69]/50"}`}
-                  onClick={() => setSlippage(val)}
+                  className={`flex-1 ${tempSlippage === val ? "bg-primary/20 text-primary border-primary/20" : "bg-[#130b29]/60 border-[#3b1f69]/50 text-muted-foreground hover:text-foreground hover:bg-[#3b1f69]/50"}`}
+                  onClick={() => setTempSlippage(val)}
                  >
                    {val}%
                  </Button>
@@ -967,18 +982,25 @@ export default function SwapInterface() {
                 <input 
                     type="number" 
                     placeholder="Custom" 
-                    value={slippage !== "Auto" && !["0.1", "0.5", "1.0"].includes(slippage) ? slippage : ""}
+                    value={tempSlippage !== "Auto" && !["0.1", "0.5", "1.0"].includes(tempSlippage) ? tempSlippage : ""}
                     onChange={(e) => {
                         const val = e.target.value;
                         if (val === "" || parseFloat(val) >= 0) {
-                            setSlippage(val === "" ? "Auto" : val);
+                            setTempSlippage(val === "" ? "Auto" : val);
                         }
                     }}
-                    className={`w-full h-9 rounded-md border bg-[#130b29]/60 px-3 pr-8 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary ${slippage !== "Auto" && !["0.1", "0.5", "1.0"].includes(slippage) ? "border-primary text-primary ring-1 ring-primary" : "border-[#3b1f69]/50 text-foreground"}`}
+                    className={`w-full h-9 rounded-md border bg-[#130b29]/60 px-3 pr-8 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary ${tempSlippage !== "Auto" && !["0.1", "0.5", "1.0"].includes(tempSlippage) ? "border-primary text-primary ring-1 ring-primary" : "border-[#3b1f69]/50 text-foreground"}`}
                 />
                 <span className="absolute right-3 text-xs text-muted-foreground">%</span>
              </div>
            </div>
+           
+           <Button 
+             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold"
+             onClick={handleSaveSettings}
+           >
+             Save Settings
+           </Button>
         </div>
       </DialogContent>
     </Dialog>
