@@ -201,19 +201,53 @@ const INITIAL_TRADES = [
 ];
 
 // Chart generation helpers
-const generateChartData = (basePrice: number, volatility: number) => {
-  return [
-    ...Array.from({ length: 16 }, (_, i) => ({
-      time: `${i}:00`,
-      price: basePrice + (Math.random() * volatility * 2 - volatility),
-    })),
-    { time: '16:00', price: basePrice * 0.99 },
-    { time: '17:00', price: basePrice * 0.95 },
-    ...Array.from({ length: 7 }, (_, i) => ({
-      time: `${17 + i + 1}:00`,
-      price: (basePrice * 0.92) + (Math.random() * volatility - volatility/2),
-    }))
-  ];
+const generateChartData = (basePrice: number, volatility: number, timeframe: string) => {
+  const points = [];
+  let currentPrice = basePrice;
+  const now = new Date();
+  
+  let count = 24; // Default points
+  let interval = 60 * 60 * 1000; // Default 1 hour
+  let formatTime = (date: Date) => `${date.getHours()}:00`;
+  
+  switch(timeframe) {
+      case '1H':
+          count = 60;
+          interval = 60 * 1000; // 1 minute
+          formatTime = (date: Date) => `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+          break;
+      case '1D':
+          count = 24;
+          interval = 60 * 60 * 1000; // 1 hour
+          formatTime = (date: Date) => `${date.getHours()}:00`;
+          break;
+      case '1W':
+          count = 7;
+          interval = 24 * 60 * 60 * 1000; // 1 day
+          formatTime = (date: Date) => ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][date.getDay()];
+          break;
+      case '1M':
+          count = 30;
+          interval = 24 * 60 * 60 * 1000; // 1 day
+          formatTime = (date: Date) => `${date.getDate()}/${date.getMonth()+1}`;
+          break;
+  }
+  
+  // Generate backwards
+  for (let i = count; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * interval);
+      // Random walk
+      const change = (Math.random() - 0.5) * volatility;
+      currentPrice += change;
+      
+      points.push({
+          time: formatTime(time),
+          price: Math.max(0.1, currentPrice),
+          fullTime: time
+      });
+  }
+  
+  return points;
 };
 
 // Helper for random hex string
@@ -377,7 +411,7 @@ export default function SwapInterface() {
                       fromToken.symbol === "USDC" && toToken.symbol === "EURC" ? (1 / 7.6055) : 1;
 
   // Dynamic Chart Data based on pair
-  const chartData = generateChartData(currentRate, currentRate * 0.005);
+  const chartData = generateChartData(currentRate, currentRate * 0.02, chartTimeframe);
   const priceChange = fromToken.symbol === "EURC" ? -0.32 : 0.005;
   const priceChangePercent = fromToken.symbol === "EURC" ? 4.15 : 3.8;
   const isPositive = priceChange >= 0;
@@ -1091,28 +1125,35 @@ export default function SwapInterface() {
             {/* Right Column (Chart) */}
             <div className="lg:col-span-7 order-2 flex flex-col gap-6">
                 <Card className="w-full min-h-[500px] bg-[#1c1038]/90 backdrop-blur-md border-[#3b1f69]/50 shadow-xl rounded-[24px] overflow-hidden flex flex-col">
-                     <div className="p-6 border-b border-[#3b1f69]/30 bg-[#1c1038]/30 flex justify-between items-center">
+                     <div className="p-6 border-b border-[#3b1f69]/30 bg-[#1c1038]/30 flex justify-between items-start">
                        <div>
-                         <div className="flex items-baseline gap-2">
-                           <h2 className="text-3xl font-bold text-foreground">1.00 {fromToken.symbol}</h2>
-                           <span className="text-sm text-muted-foreground"> = {currentRate.toFixed(4)} {toToken.symbol}</span>
+                         <div className="flex items-center gap-3 mb-1">
+                             <div className="flex items-center -space-x-2">
+                                <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-[#1c1038] flex items-center justify-center text-xs font-bold text-white z-10">{fromToken.icon}</div>
+                                <div className="w-8 h-8 rounded-full bg-yellow-400 border-2 border-[#1c1038] flex items-center justify-center text-xs font-bold text-yellow-900">{toToken.icon}</div>
+                             </div>
+                             <h2 className="text-xl font-bold text-foreground">{fromToken.symbol} / {toToken.symbol}</h2>
+                             <span className="px-2 py-0.5 rounded-md bg-secondary/50 text-xs font-medium text-muted-foreground border border-border/20">Spot</span>
                          </div>
-                         <div className="flex items-center gap-2 mt-1">
-                           <span className={`text-sm font-medium ${isPositive ? 'text-green-500' : 'text-red-500'} flex items-center gap-1`}>
-                             {isPositive ? <TrendingUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />} 
-                             {isPositive ? '+' : ''}{priceChange} ({priceChangePercent}%)
+                         <div className="flex items-baseline gap-3">
+                           <h2 className="text-4xl font-bold text-foreground tracking-tight">{currentRate.toFixed(4)}</h2>
+                           <span className={`text-lg font-medium ${isPositive ? 'text-green-500' : 'text-red-500'} flex items-center gap-1`}>
+                             {isPositive ? '+' : ''}{priceChangePercent}%
                            </span>
-                           <span className="text-xs text-muted-foreground">Past {chartTimeframe}</span>
+                         </div>
+                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                            <span>24h Vol: <span className="text-foreground font-medium">$47.50K</span></span>
+                            <span className="text-xs opacity-60">(updates hourly)</span>
                          </div>
                        </div>
-                       <div className="flex gap-2">
+                       <div className="flex bg-[#130b29]/60 rounded-lg p-1 border border-[#3b1f69]/50">
                          {["1H", "1D", "1W", "1M"].map(period => (
                            <Button 
                             key={period} 
                             variant="ghost" 
                             size="sm" 
                             onClick={() => setChartTimeframe(period)}
-                            className={`h-8 px-3 rounded-lg text-xs font-semibold ${chartTimeframe === period ? 'bg-secondary text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`h-8 px-4 rounded-md text-xs font-bold transition-all ${chartTimeframe === period ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
                            >
                              {period}
                            </Button>
@@ -1120,36 +1161,38 @@ export default function SwapInterface() {
                        </div>
                      </div>
                      
-                     <div className="flex-1 w-full min-h-[350px] p-4 relative">
+                     <div className="flex-1 w-full min-h-[350px] p-0 relative">
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={chartData}>
+                          <AreaChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
                             <defs>
                               <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0}/>
+                                <stop offset="5%" stopColor={isPositive ? "#22c55e" : "#ff9f43"} stopOpacity={0.2}/>
+                                <stop offset="95%" stopColor={isPositive ? "#22c55e" : "#ff9f43"} stopOpacity={0}/>
                               </linearGradient>
                             </defs>
                             <XAxis 
                               dataKey="time" 
                               axisLine={false}
                               tickLine={false}
-                              tick={{ fill: '#6B7280', fontSize: 12 }}
+                              tick={{ fill: '#6B7280', fontSize: 11 }}
                               dy={10}
+                              interval={Math.floor(chartData.length / 6)}
                             />
                             <YAxis 
                               domain={['dataMin', 'dataMax']} 
+                              orientation="right"
                               axisLine={false}
                               tickLine={false}
-                              tick={{ fill: '#6B7280', fontSize: 12 }}
-                              dx={-10}
+                              tick={{ fill: '#6B7280', fontSize: 11 }}
+                              dx={10}
                               tickFormatter={(value) => value.toFixed(4)}
                             />
                             <Tooltip 
                               contentStyle={{ 
-                                backgroundColor: 'rgba(17, 24, 39, 0.9)', 
-                                border: '1px solid rgba(75, 85, 99, 0.4)',
+                                backgroundColor: '#1c1038', 
+                                border: '1px solid #3b1f69',
                                 borderRadius: '12px',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                boxShadow: '0 8px 16px rgba(0,0,0,0.5)'
                               }}
                               itemStyle={{ color: '#fff' }}
                               labelStyle={{ color: '#9CA3AF', marginBottom: '4px' }}
@@ -1158,13 +1201,18 @@ export default function SwapInterface() {
                             <Area 
                               type="monotone" 
                               dataKey="price" 
-                              stroke={isPositive ? "#22c55e" : "#ef4444"} 
-                              strokeWidth={3}
+                              stroke={isPositive ? "#22c55e" : "#ff9f43"} 
+                              strokeWidth={2}
                               fillOpacity={1} 
                               fill="url(#colorPrice)" 
                             />
                           </AreaChart>
                         </ResponsiveContainer>
+                        
+                        {/* TradingView-like Watermark */}
+                        <div className="absolute bottom-4 left-6 pointer-events-none opacity-20">
+                            <span className="text-4xl font-black tracking-tighter text-muted-foreground">GOJO</span>
+                        </div>
                      </div>
                 </Card>
             </div>
