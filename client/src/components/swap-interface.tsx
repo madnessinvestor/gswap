@@ -1309,10 +1309,6 @@ export default function SwapInterface() {
                         </Button>
                     )}
                     
-                    <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <Info className="w-3 h-3" />
-                        <span>No price impact (Testnet)</span>
-                    </div>
                   </div>
                 </Card>
             </div>
