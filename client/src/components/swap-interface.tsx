@@ -764,7 +764,7 @@ export default function SwapInterface() {
            <Settings className="w-5 h-5" />
          </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm bg-card border-border">
+      <DialogContent className="sm:max-w-sm bg-[#1c1038]/95 backdrop-blur-xl border-[#3b1f69]/50 text-foreground">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
@@ -780,7 +780,7 @@ export default function SwapInterface() {
                   key={val}
                   variant={slippage === val ? "secondary" : "outline"} 
                   size="sm" 
-                  className={`flex-1 ${slippage === val ? "bg-primary/10 text-primary border-primary/20" : ""}`}
+                  className={`flex-1 ${slippage === val ? "bg-primary/20 text-primary border-primary/20" : "bg-[#130b29]/60 border-[#3b1f69]/50 text-muted-foreground hover:text-foreground hover:bg-[#3b1f69]/50"}`}
                   onClick={() => setSlippage(val)}
                  >
                    {val}%
