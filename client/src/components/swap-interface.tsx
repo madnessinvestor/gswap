@@ -453,6 +453,8 @@ const formatTimeAgo = (timestamp: number) => {
     );
   };
 
+import BridgeProgressModal from "./bridge-progress-modal";
+
 export default function SwapInterface() {
   const { toast } = useToast();
   const [activeNetwork, setActiveNetwork] = useState<'arc' | 'sepolia'>('arc');
@@ -1164,28 +1166,7 @@ export default function SwapInterface() {
 
   const handleSwap = async () => {
       if (mode === 'bridge') {
-          setIsSwapping(true);
-          // Simulate Bridge Delay
-          setTimeout(() => {
-              setIsSwapping(false);
-              setInputAmount("");
-              setOutputAmount("");
-              toast({
-                  title: "Bridge Initiated",
-                  description: `Bridging ${inputAmount} USDC from ${bridgeDirection === 'sepolia-to-arc' ? 'Sepolia' : 'Arc Testnet'} to ${bridgeDirection === 'sepolia-to-arc' ? 'Arc Testnet' : 'Sepolia'}.`,
-                  duration: 5000,
-                  className: "bg-blue-500/15 border-blue-500/30 text-blue-500",
-              });
-               /* 
-               try {
-                const audio = new Audio(successSound);
-                audio.volume = 0.5;
-                audio.play().catch(e => console.error("Audio play failed", e));
-              } catch (err) {
-                console.error("Audio initialization failed", err);
-              }
-              */
-          }, 3000);
+          setIsBridgeModalOpen(true);
           return;
       }
 
@@ -1470,9 +1451,21 @@ export default function SwapInterface() {
   );
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isBridgeModalOpen, setIsBridgeModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground flex flex-col font-sans overflow-hidden">
+      <BridgeProgressModal 
+        open={isBridgeModalOpen} 
+        onOpenChange={setIsBridgeModalOpen}
+        direction={bridgeDirection}
+        amount={inputAmount}
+        onComplete={() => {
+            setInputAmount("");
+            setOutputAmount("");
+            fetchBalances(account);
+        }}
+      />
       {/* Background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-900/20 via-background to-background -z-10" />
 
