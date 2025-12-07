@@ -1196,7 +1196,16 @@ export default function SwapInterface() {
                             if (/^\d*\.?\d*$/.test(val)) setInputAmount(val);
                           }}
                         />
-                        <TokenSelector selected={fromToken} onSelect={setFromToken} />
+                        <TokenSelector 
+                          selected={fromToken} 
+                          onSelect={(token) => {
+                            if (token.symbol === toToken.symbol) {
+                              // Swap if same
+                              setToToken(fromToken);
+                            }
+                            setFromToken(token);
+                          }} 
+                        />
                       </div>
                       
                       {/* Slider */}
@@ -1243,7 +1252,16 @@ export default function SwapInterface() {
                           className="bg-transparent text-3xl font-medium text-foreground placeholder:text-muted-foreground/20 outline-none w-full font-sans cursor-default"
                           value={outputAmount}
                         />
-                        <TokenSelector selected={toToken} onSelect={setToToken} />
+                        <TokenSelector 
+                          selected={toToken} 
+                          onSelect={(token) => {
+                            if (token.symbol === fromToken.symbol) {
+                              // Swap if same
+                              setFromToken(toToken);
+                            }
+                            setToToken(token);
+                          }} 
+                        />
                       </div>
                     </div>
 
