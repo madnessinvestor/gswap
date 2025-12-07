@@ -1012,7 +1012,23 @@ export default function SwapInterface() {
 
   const handleSwap = async () => {
       const client = getWalletClient();
-      if (!client || !account) return;
+      if (!client) return;
+      
+      // Re-fetch account to ensure we have the active one
+      const accounts = await (client as any).request({ method: 'eth_accounts' });
+      const activeAccount = accounts[0];
+      
+      if (!activeAccount) {
+          toast({ title: "Wallet not connected", variant: "destructive" });
+          return;
+      }
+      
+      // Update state to match
+      if (activeAccount !== account) {
+          setAccount(activeAccount);
+      }
+
+      console.log("Swapping with account:", activeAccount);
 
       // Double-check allowance immediately before swapping
       // This prevents race conditions where the UI thinks it's approved but it's not
@@ -1032,7 +1048,7 @@ export default function SwapInterface() {
         const encodedBalance = encodeFunctionData({
             abi: ERC20_ABI,
             functionName: 'balanceOf',
-            args: [account]
+            args: [activeAccount]
         });
         const balanceResult = await (client as any).request({
             method: 'eth_call',
@@ -1051,7 +1067,7 @@ export default function SwapInterface() {
               variant: "destructive"
           });
           // Update UI balance
-          fetchBalances(account);
+          fetchBalances(activeAccount);
           return;
         }
       } catch (e) {
@@ -1086,7 +1102,7 @@ export default function SwapInterface() {
               { type: 'uint256' },
               { type: 'address' }
             ],
-            [amountIn, amountOutMin, account as `0x${string}`]
+            [amountIn, amountOutMin, activeAccount as `0x${string}`]
           );
           
           const data = selector + encodedParams.slice(2);
@@ -1096,7 +1112,7 @@ export default function SwapInterface() {
           console.log("Data:", data);
 
           const hash = await client.sendTransaction({
-              account: account as `0x${string}`,
+              account: activeAccount as `0x${string}`,
               to: targetAddress as `0x${string}`,
               data: data as `0x${string}`,
               value: BigInt(0),
