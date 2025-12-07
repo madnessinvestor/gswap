@@ -801,7 +801,7 @@ export default function SwapInterface() {
       {/* Navbar */}
       <nav className="w-full max-w-7xl mx-auto p-4 flex justify-between items-center z-10">
         <div className="flex items-center">
-           <img src={gojoLogo} alt="GojoSwap" className="h-24 w-auto object-contain" />
+           <img src={gojoLogo} alt="GojoSwap" className="h-48 w-auto object-contain" />
         </div>
         
         <div className="flex items-center gap-3">
