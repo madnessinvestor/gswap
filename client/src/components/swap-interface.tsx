@@ -763,8 +763,11 @@ export default function SwapInterface() {
   // Initialize Viem Client
   const getWalletClient = () => {
     if (typeof window !== 'undefined' && (window as any).ethereum) {
+      // Use the active network to initialize the client, but fallback to Arc if unsure
+      // This ensures we don't use a client configured for the wrong chain
+      const targetChain = activeNetwork === 'sepolia' ? sepolia : arcTestnet;
       return createWalletClient({
-        chain: arcTestnet,
+        chain: targetChain,
         transport: custom((window as any).ethereum)
       });
     }
@@ -977,7 +980,9 @@ export default function SwapInterface() {
             });
             
             (window as any).ethereum.on('chainChanged', () => {
-                window.location.reload();
+                // Do not reload, just let the state sync
+                // window.location.reload(); 
+                fetchBalances(account);
             });
         }
 
@@ -1024,7 +1029,8 @@ export default function SwapInterface() {
                         }
                     });
                      (window as any).ethereum.on('chainChanged', () => {
-                        window.location.reload();
+                        // window.location.reload();
+                        fetchBalances(address);
                     });
                 }
 
