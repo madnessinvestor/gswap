@@ -18,7 +18,7 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
   // Helper to get interval seconds
   const getIntervalSeconds = (period: string) => {
       switch(period) {
-          case 'RealTime': return 5;
+          case 'RealTime': return 15;
           case '15m': return 15 * 60;
           case '1H': return 3600;
           case '1D': return 86400;
@@ -225,10 +225,8 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
     // Initial tick
     tick();
 
-    // Update interval: Always 1s to ensure "RealTime" price updates 
-    // for the UI labels and Swap rate, even if the Chart Candle 
-    // only updates its closing value.
-    const interval = setInterval(tick, 1000);
+    // Update interval: 15s to reduce volatility and transaction failures
+    const interval = setInterval(tick, 15000);
 
     // Handle resize
     const handleResize = () => {
