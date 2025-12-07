@@ -178,7 +178,8 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
 
     async function tick() {
       const price = await getPrice();
-      if (!price) return;
+      // Check if component is still mounted and chart exists
+      if (!price || !chartRef.current || !seriesRef.current) return;
       
       // Update displayed price format depending on value
       // If < 1, show more decimals
@@ -193,24 +194,31 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
       
       let updateTime: Time;
       
-      if (timeframe === 'RealTime') {
-          // For RealTime, just use current timestamp (no alignment)
-          updateTime = now as Time;
-          // Full update for RealTime
-          series.update({ time: updateTime, value: price });
-      } else {
-          // For other timeframes, align to grid
-          const interval = getIntervalSeconds(timeframe);
-          updateTime = (Math.floor(now / interval) * interval) as Time;
-          
-          // ONLY update if we have crossed into a NEW interval
-          // This keeps the chart static during the interval
-          if (lastGridTimeRef.current !== null && updateTime > lastGridTimeRef.current) {
-               series.update({ time: updateTime, value: price });
-               lastGridTimeRef.current = updateTime as number;
+      try {
+          if (timeframe === 'RealTime') {
+              // For RealTime, just use current timestamp (no alignment)
+              updateTime = now as Time;
+              // Full update for RealTime
+              series.update({ time: updateTime, value: price });
+          } else {
+              // For other timeframes, align to grid
+              const interval = getIntervalSeconds(timeframe);
+              updateTime = (Math.floor(now / interval) * interval) as Time;
+              
+              // ONLY update if we have crossed into a NEW interval
+              // This keeps the chart static during the interval
+              // Fix TS Error: updateTime is Time (number), lastGridTimeRef.current is number
+              // Time type is alias for number (UTCTimestamp), so comparison is valid but TS might complain about branded types
+              const currentGridTime = updateTime as number;
+              
+              if (lastGridTimeRef.current !== null && currentGridTime > lastGridTimeRef.current) {
+                   series.update({ time: updateTime, value: price });
+                   lastGridTimeRef.current = currentGridTime;
+              }
           }
-          // If updateTime == lastGridTimeRef.current, we do NOTHING.
-          // This ensures the candle stays static until the next interval starts.
+      } catch (e) {
+          // Ignore disposal errors
+          console.debug("Chart update skipped (disposed)");
       }
     }
 
