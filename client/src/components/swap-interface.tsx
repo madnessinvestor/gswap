@@ -812,7 +812,7 @@ export default function SwapInterface() {
           </Button>
           
           {/* Network Selector */}
-          <div className="hidden sm:flex items-center gap-2 bg-secondary/40 hover:bg-secondary/60 transition-colors rounded-full px-3 py-1.5 border border-border/50 cursor-pointer">
+          <div className="hidden sm:flex items-center gap-2 bg-[#1c1038]/80 hover:bg-[#3b1f69]/50 transition-colors rounded-full px-3 py-1.5 border border-[#3b1f69]/50 cursor-pointer">
              <div className="w-4 h-4 rounded-full bg-transparent flex items-center justify-center overflow-hidden">
                 <img src={arcSymbol} alt="Arc" className="w-full h-full object-contain" />
              </div>
@@ -1001,8 +1001,8 @@ export default function SwapInterface() {
 
             {/* Right Column (Chart) */}
             <div className="lg:col-span-7 order-2 flex flex-col gap-6">
-                <Card className="w-full min-h-[500px] bg-card/50 backdrop-blur-md border-border/50 shadow-xl rounded-[24px] overflow-hidden flex flex-col">
-                     <div className="p-6 border-b border-border/50 bg-card/30 flex justify-between items-center">
+                <Card className="w-full min-h-[500px] bg-[#1c1038]/90 backdrop-blur-md border-[#3b1f69]/50 shadow-xl rounded-[24px] overflow-hidden flex flex-col">
+                     <div className="p-6 border-b border-[#3b1f69]/30 bg-[#1c1038]/30 flex justify-between items-center">
                        <div>
                          <div className="flex items-baseline gap-2">
                            <h2 className="text-3xl font-bold text-foreground">1.00 {fromToken.symbol}</h2>
@@ -1082,8 +1082,8 @@ export default function SwapInterface() {
         </div>
 
             {/* Trade History (Full Width Below) */}
-            <Card className="w-full bg-card/50 backdrop-blur-md border-border/50 shadow-xl rounded-[24px] overflow-hidden col-span-1 lg:col-span-12">
-                <div className="p-5 border-b border-border/50 bg-card/30 flex items-center justify-between">
+            <Card className="w-full bg-[#1c1038]/90 backdrop-blur-md border-[#3b1f69]/50 shadow-xl rounded-[24px] overflow-hidden col-span-1 lg:col-span-12">
+                <div className="p-5 border-b border-[#3b1f69]/30 bg-[#1c1038]/30 flex items-center justify-between">
                    <div className="flex flex-col gap-1">
                      <h3 className="font-bold text-base text-foreground">Trade History & Trades</h3>
                      <span className="text-xs text-muted-foreground">
