@@ -1164,21 +1164,48 @@ export default function SwapInterface() {
 
             {/* Right Column (Chart) */}
             <div className="lg:col-span-7 order-2 flex flex-col gap-6">
-                <Card className="w-full min-h-[500px] bg-[#1c1038]/90 backdrop-blur-md border-[#3b1f69]/50 shadow-xl rounded-[24px] overflow-hidden flex flex-col items-center justify-center relative">
-                     {/* TradingView-like Watermark */}
+                <Card className="w-full min-h-[500px] bg-[#1c1038]/90 backdrop-blur-md border-[#3b1f69]/50 shadow-xl rounded-[24px] overflow-hidden flex flex-col relative">
+                     {/* TradingView-like Watermark - Moved to background */}
                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 z-0">
                          <span className="text-[100px] font-black tracking-tighter text-muted-foreground rotate-[-15deg]">GOJO</span>
                      </div>
-                     
-                     <div className="w-full h-full z-10 p-4">
-                        <div className="flex items-center gap-3 mb-4 pl-2">
+
+                     {/* Header Section (Restored) */}
+                     <div className="p-6 border-b border-[#3b1f69]/30 bg-[#1c1038]/30 flex justify-between items-start z-10 relative">
+                       <div>
+                         <div className="flex items-center gap-3 mb-1">
                              <div className="flex items-center -space-x-2">
                                 <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-[#1c1038] flex items-center justify-center text-xs font-bold text-white z-10">{fromToken.icon}</div>
                                 <div className="w-8 h-8 rounded-full bg-yellow-400 border-2 border-[#1c1038] flex items-center justify-center text-xs font-bold text-yellow-900">{toToken.icon}</div>
                              </div>
                              <h2 className="text-xl font-bold text-foreground">{fromToken.symbol} / {toToken.symbol}</h2>
                              <span className="px-2 py-0.5 rounded-md bg-secondary/50 text-xs font-medium text-muted-foreground border border-border/20">Spot</span>
-                        </div>
+                         </div>
+                         <div className="text-sm font-medium text-muted-foreground mt-1 flex items-center gap-2">
+                            <span className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs font-bold tracking-wider">RATE</span>
+                            1 {fromToken.symbol} ≈ {currentRate.toFixed(4)} {toToken.symbol}
+                         </div>
+                         <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                            <span>24h Vol: <span className="text-foreground font-medium">${(globalVolume/1000).toFixed(2)}K</span></span>
+                            <span className="text-xs opacity-60">(updates live)</span>
+                         </div>
+                       </div>
+                       <div className="flex bg-[#130b29]/60 rounded-lg p-1 border border-[#3b1f69]/50">
+                         {["1s", "1H", "1D", "1W", "1M"].map(period => (
+                           <Button 
+                            key={period} 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setChartTimeframe(period)}
+                            className={`h-8 px-4 rounded-md text-xs font-bold transition-all ${chartTimeframe === period ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
+                           >
+                             {period}
+                           </Button>
+                         ))}
+                       </div>
+                     </div>
+                     
+                     <div className="w-full h-full z-10 p-4 min-h-[400px]">
                         <PriceChart />
                      </div>
                 </Card>
