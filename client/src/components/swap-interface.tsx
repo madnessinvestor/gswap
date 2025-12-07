@@ -171,7 +171,7 @@ const INITIAL_TRADES = [
     tokenSymbol: "EURC",
     usdcAmount: "9.3200",
     time: "1m ago",
-    // Using a real transaction hash provided by user for demonstration
+    timestamp: Date.now() - 60000,
     hash: "0x0929...3e31",
     fullHash: "0x092971a645209be2b43dcfff24733e477cddcbc0029354236a2d91054bd93e31"
   },
@@ -183,6 +183,7 @@ const INITIAL_TRADES = [
     tokenSymbol: "EURC",
     usdcAmount: "18.4731",
     time: "5m ago",
+    timestamp: Date.now() - 300000,
     hash: "0x7e8f...1a2b",
     fullHash: "0x7e8f9a0b1c2d3e4f567890123456789abcdef0123456789abcdef012341a2b"
   },
@@ -194,6 +195,7 @@ const INITIAL_TRADES = [
     tokenSymbol: "EURC",
     usdcAmount: "12.3160",
     time: "12m ago",
+    timestamp: Date.now() - 720000,
     hash: "0x5c6d...3e4f",
     fullHash: "0x5c6d7e8f9a0b1c2d3e4f567890123456789abcdef0123456789abcdef03e4f"
   },
@@ -205,6 +207,7 @@ const INITIAL_TRADES = [
     tokenSymbol: "EURC",
     usdcAmount: "5.0000",
     time: "25m ago",
+    timestamp: Date.now() - 1500000,
     hash: "0x9a0b...5c6d",
     fullHash: "0x9a0b1c2d3e4f567890123456789abcdef0123456789abcdef0123456785c6d"
   }
@@ -573,8 +576,25 @@ export default function SwapInterface() {
     }
 
     // Sort combined trades by "recency" (mock logic: saved trades are 'Just now' or recent, mock are older)
-    // Actually, just put saved trades first
+    // Actually, just put saved trades first and sort mock history
+    mockHistory.sort((a, b) => b.timestamp - a.timestamp);
     setMyTrades([...savedTrades, ...mockHistory]);
+
+    // Update Global Trades to include My Saved Trades (so they persist in "All Trades" view too)
+    setTrades(prev => {
+        // Filter out any trades that might be duplicates (by hash)
+        const currentHashes = new Set(prev.map(t => t.hash));
+        const newTradesToAdd = savedTrades.filter((t: any) => !currentHashes.has(t.hash));
+        
+        // Return sorted combined list
+        const combined = [...newTradesToAdd, ...prev].sort((a: any, b: any) => {
+            const timeA = a.timestamp || 0;
+            const timeB = b.timestamp || 0;
+            return timeB - timeA;
+        });
+        
+        return combined.slice(0, 50); // Keep last 50
+    });
 
   }, [account]);
 
@@ -1477,10 +1497,11 @@ export default function SwapInterface() {
                         <tr key={i} className="hover:bg-secondary/20 transition-colors group">
                             <td className="px-6 py-4 font-semibold text-foreground">
                                 <div className="flex items-center gap-2">
-                                  {showMyTrades ? (
+                                  {showMyTrades || ((trade as any).fullTrader && account && (trade as any).fullTrader.toLowerCase() === account.toLowerCase()) ? (
                                       trade.trader.includes('Router') ? 'Router' : (
-                                          <a href={`${arcTestnet.blockExplorers.default.url}/address/${(trade as any).fullTrader || trade.trader}`} target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors flex items-center gap-2">
+                                          <a href={`${arcTestnet.blockExplorers.default.url}/address/${(trade as any).fullTrader || trade.trader}`} target="_blank" rel="noopener noreferrer" className={`hover:text-primary transition-colors flex items-center gap-2 ${((trade as any).fullTrader && account && (trade as any).fullTrader.toLowerCase() === account.toLowerCase()) ? "text-primary font-bold" : ""}`}>
                                             {trade.trader}
+                                            {((trade as any).fullTrader && account && (trade as any).fullTrader.toLowerCase() === account.toLowerCase()) && <span className="text-[9px] bg-primary/20 px-1 rounded-sm">YOU</span>}
                                             <ExternalLink className="w-3 h-3 text-orange-500/70 hover:text-orange-500 cursor-pointer" />
                                           </a>
                                       )
@@ -1543,7 +1564,7 @@ export default function SwapInterface() {
                             </td>
                             <td className="px-6 py-4 text-right">
                                 <div className="flex justify-end">
-                                    {showMyTrades ? (
+                                    {showMyTrades || ((trade as any).fullTrader && account && (trade as any).fullTrader.toLowerCase() === account.toLowerCase()) ? (
                                         <a href={`${arcTestnet.blockExplorers.default.url}/tx/${(trade as any).fullHash || trade.hash}`} target="_blank" rel="noopener noreferrer">
                                             <ExternalLink className="w-4 h-4 text-orange-500/70 hover:text-orange-500 cursor-pointer transition-colors" />
                                         </a>
