@@ -799,12 +799,12 @@ export default function SwapInterface() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-blue-900/20 via-background to-background -z-10" />
 
       {/* Navbar */}
-      <nav className="w-full max-w-7xl mx-auto p-4 flex justify-between items-center z-10">
-        <div className="flex items-center">
+      <nav className="w-full max-w-7xl mx-auto p-4 flex justify-between items-start z-10">
+        <div className="flex items-center -mt-8 -ml-8">
            <img src={gojoLogo} alt="GojoSwap" className="h-48 w-auto object-contain" />
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mt-4">
           <Button variant="ghost" size="sm" asChild className="hidden sm:flex gap-2 text-muted-foreground">
             <a href="https://faucet.circle.com" target="_blank" rel="noopener noreferrer">
               USDC Faucet <ExternalLink className="w-3 h-3" />
