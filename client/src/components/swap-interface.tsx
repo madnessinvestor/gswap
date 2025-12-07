@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createWalletClient, custom, parseUnits, encodeFunctionData, formatUnits, encodeAbiParameters } from 'viem';
 import logoImage from '@assets/d0bbfa09-77e9-4527-a95a-3ec275fefad8_1765059425973.png';
 import arcSymbol from '@assets/download_1765062780027.png';
-import gojoLogo from '@assets/aabb8089-789f-4c9a-b88a-74a0d211296e_1765068097786.png';
+import gojoLogo from '@assets/Gojooo_1765068633880.png';
 // import { arc } from 'viem/chains'; // Removed as we define custom chain
 
 // Define Arc Testnet Custom Chain for Viem
