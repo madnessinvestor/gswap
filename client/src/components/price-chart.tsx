@@ -55,14 +55,34 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, currentRat
       lastGridTimeRef.current = alignedNow;
 
       let count = 100;
-      // Adjust history count based on timeframe to fill screen nicely
+      let volatility = 0.005; // Default
+
+      // Adjust history count and volatility based on timeframe
       switch(period) {
-          case 'RealTime': count = 100; break;
-          case '15m': count = 50; break;
-          case '1H': count = 48; break;
-          case '1D': count = 30; break;
-          case '1W': count = 24; break;
-          case '1M': count = 12; break;
+          case 'RealTime': 
+              count = 100; 
+              volatility = 0.0002; // Very low noise for 15s updates
+              break;
+          case '15m': 
+              count = 96; // 24 hours of 15m candles
+              volatility = 0.002; 
+              break;
+          case '1H': 
+              count = 168; // 1 week of 1H candles
+              volatility = 0.005; 
+              break;
+          case '1D': 
+              count = 180; // ~6 months
+              volatility = 0.015; 
+              break;
+          case '1W': 
+              count = 104; // 2 years
+              volatility = 0.04; 
+              break;
+          case '1M': 
+              count = 60; // 5 years
+              volatility = 0.08; 
+              break;
       }
 
       // Generate a random walk first
@@ -73,7 +93,12 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, currentRat
       for (let i = 0; i <= count; i++) {
           rawValues.push(currentP);
           // Add volatility for next step
-          currentP += (Math.random() - 0.5) * (basePrice * 0.005);
+          // Use a slightly biased random walk to create "trends" rather than just noise
+          // bias changes slowly over time
+          const trend = Math.sin(i / 10) * volatility * 0.5; 
+          const noise = (Math.random() - 0.5) * volatility;
+          
+          currentP += (trend + noise) * basePrice;
       }
 
       // If we have a target end price (the current live price), 
