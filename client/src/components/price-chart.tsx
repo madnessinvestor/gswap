@@ -129,7 +129,7 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
 
     const pool = new ethers.Contract(poolAddress, ABI, provider);
 
-    async function getPrice(addNoise: boolean) {
+    async function getPrice() {
       try {
         // 1 EURC (6 decimals) -> USDC (6 decimals)
         const amountIn = ethers.parseUnits("1", 6);
@@ -152,11 +152,9 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
             mockPrice = 1 / 7.56;
         }
         
-        if (addNoise) {
-            // Add volatility only if requested (RealTime)
-            return mockPrice + (Math.random() * (mockPrice * 0.005) - (mockPrice * 0.0025));
-        }
-        return mockPrice;
+        // Always add noise to simulate live market behavior
+        // This ensures the price feels "alive" in all timeframes
+        return mockPrice + (Math.random() * (mockPrice * 0.005) - (mockPrice * 0.0025));
       }
     }
 
@@ -168,9 +166,7 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
     chart.timeScale().fitContent();
 
     async function tick() {
-      const isRealTime = timeframe === 'RealTime';
-      // Only add noise if RealTime
-      const price = await getPrice(isRealTime);
+      const price = await getPrice();
       if (!price) return;
       
       // Update displayed price format depending on value
@@ -186,7 +182,7 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
       
       let updateTime: Time;
       
-      if (isRealTime) {
+      if (timeframe === 'RealTime') {
           // For RealTime, just use current timestamp (no alignment)
           updateTime = now as Time;
       } else {
@@ -201,11 +197,10 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
     // Initial tick
     tick();
 
-    // Update interval based on timeframe
-    // RealTime: 1s for smooth updates
-    // Others: 5s (but stable price if no real change)
-    const tickInterval = timeframe === 'RealTime' ? 1000 : 5000;
-    const interval = setInterval(tick, tickInterval);
+    // Update interval: Always 1s to ensure "RealTime" price updates 
+    // for the UI labels and Swap rate, even if the Chart Candle 
+    // only updates its closing value.
+    const interval = setInterval(tick, 1000);
 
     // Handle resize
     const handleResize = () => {
