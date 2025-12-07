@@ -28,6 +28,9 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
       }
   };
 
+  // State to track the last grid time updated
+  const lastGridTimeRef = useRef<number | null>(null);
+
   // Function to generate initial data based on timeframe
   const generateInitialData = (basePrice: number, period: string) => {
       const data: any[] = [];
@@ -36,6 +39,9 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
       
       // Align the end time to the grid (except for RealTime)
       const alignedNow = period === 'RealTime' ? now : Math.floor(now / interval) * interval;
+      
+      // Initialize lastGridTimeRef
+      lastGridTimeRef.current = alignedNow;
 
       let count = 100;
       // Adjust history count based on timeframe to fill screen nicely
@@ -194,12 +200,17 @@ export default function PriceChart({ timeframe, fromSymbol, toSymbol, onPriceUpd
           series.update({ time: updateTime, value: price });
       } else {
           // For other timeframes, align to grid
-          // ONLY update the current candle if it's a new data point or closing price update
-          // But since we want "stable" candles, we should be careful not to jump wildly.
-          // The reduced noise in getPrice handles the "oscillating too much" issue.
           const interval = getIntervalSeconds(timeframe);
           updateTime = (Math.floor(now / interval) * interval) as Time;
-          series.update({ time: updateTime, value: price });
+          
+          // ONLY update if we have crossed into a NEW interval
+          // This keeps the chart static during the interval
+          if (lastGridTimeRef.current !== null && updateTime > lastGridTimeRef.current) {
+               series.update({ time: updateTime, value: price });
+               lastGridTimeRef.current = updateTime as number;
+          }
+          // If updateTime == lastGridTimeRef.current, we do NOTHING.
+          // This ensures the candle stays static until the next interval starts.
       }
     }
 
