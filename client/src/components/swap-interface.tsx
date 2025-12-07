@@ -306,7 +306,9 @@ export default function SwapInterface() {
   const [globalVolume, setGlobalVolume] = useState(4245890.00); // Simulated start volume
   
   // State for dynamic exchange rate
-  const [exchangeRate, setExchangeRate] = useState(7.56); // Default fallback
+  // Default should be correct for the initial pair USDC -> EURC
+  // Since USDC -> EURC is ~0.132 (1/7.56)
+  const [exchangeRate, setExchangeRate] = useState(1/7.56);
 
   // Fetch Live Exchange Rate - REMOVED redundant interval
   // The price is now driven by the PriceChart component via callback
