@@ -1013,7 +1013,15 @@ export default function SwapInterface() {
 
               toast({ 
                 title: "Swap Successful", 
-                description: "Balances updated.",
+                description: (
+                  <div className="flex flex-col gap-1">
+                    <p>Balances updated.</p>
+                    <div className="text-xs font-mono mt-1 bg-green-500/10 p-2 rounded border border-green-500/20">
+                      <p>You sold <span className="font-bold">{inputAmount} {fromToken.symbol}</span></p>
+                      <p>Received <span className="font-bold">{parseFloat(outputAmount).toFixed(6)} {toToken.symbol}</span></p>
+                    </div>
+                  </div>
+                ),
                 className: "bg-green-500/15 border-green-500/30 text-green-500"
               });
           }, 5000);
