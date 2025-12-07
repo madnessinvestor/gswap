@@ -726,9 +726,16 @@ export default function SwapInterface() {
       }
 
       // 4. Update State
+      // Use floor to 4 decimals to avoid rounding up (which causes "exceeds balance" errors if user clicks MAX)
+      const toFixedFloor = (numStr: string, decimals: number) => {
+          const num = parseFloat(numStr);
+          const factor = Math.pow(10, decimals);
+          return (Math.floor(num * factor) / factor).toFixed(decimals);
+      };
+
       setBalances({
-        USDC: parseFloat(usdcTokenFormatted) > 0 ? parseFloat(usdcTokenFormatted).toFixed(4) : parseFloat(usdcGasFormatted).toFixed(4),
-        EURC: parseFloat(eurcFormatted).toFixed(4)
+        USDC: parseFloat(usdcTokenFormatted) > 0 ? toFixedFloor(usdcTokenFormatted, 4) : toFixedFloor(usdcGasFormatted, 4),
+        EURC: toFixedFloor(eurcFormatted, 4)
       });
 
     } catch (error) {
