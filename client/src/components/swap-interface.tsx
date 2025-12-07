@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createWalletClient, custom, parseUnits, encodeFunctionData, formatUnits, encodeAbiParameters } from 'viem';
 import logoImage from '@assets/d0bbfa09-77e9-4527-a95a-3ec275fefad8_1765059425973.png';
 import arcSymbol from '@assets/download_1765062780027.png';
+import gojoLogo from '@assets/aabb8089-789f-4c9a-b88a-74a0d211296e_1765068097786.png';
 // import { arc } from 'viem/chains'; // Removed as we define custom chain
 
 // Define Arc Testnet Custom Chain for Viem
@@ -799,14 +800,8 @@ export default function SwapInterface() {
 
       {/* Navbar */}
       <nav className="w-full max-w-7xl mx-auto p-4 flex justify-between items-center z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-14 h-14 bg-primary/20 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden border border-primary/20">
-            <img src={logoImage} alt="Arc Swap Logo" className="w-full h-full object-cover" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl font-bold tracking-tight leading-none">Arc Swap</span>
-            <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Testnet</span>
-          </div>
+        <div className="flex items-center">
+           <img src={gojoLogo} alt="GojoSwap" className="h-16 w-auto object-contain" />
         </div>
         
         <div className="flex items-center gap-3">
