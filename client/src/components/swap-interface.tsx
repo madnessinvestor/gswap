@@ -1141,7 +1141,11 @@ export default function SwapInterface() {
                              {isPositive ? '+' : ''}{priceChangePercent}%
                            </span>
                          </div>
-                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                         <div className="text-sm font-medium text-muted-foreground mt-1 flex items-center gap-2">
+                            <span className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs font-bold tracking-wider">RATE</span>
+                            1 {fromToken.symbol} ≈ {currentRate.toFixed(4)} {toToken.symbol}
+                         </div>
+                         <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
                             <span>24h Vol: <span className="text-foreground font-medium">$47.50K</span></span>
                             <span className="text-xs opacity-60">(updates hourly)</span>
                          </div>
