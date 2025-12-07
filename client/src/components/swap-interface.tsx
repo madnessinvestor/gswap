@@ -1252,6 +1252,14 @@ export default function SwapInterface() {
                         <div className="absolute bottom-4 left-6 pointer-events-none opacity-20">
                             <span className="text-4xl font-black tracking-tighter text-muted-foreground">GOJO</span>
                         </div>
+
+                        {/* Volume Indicator Overlay */}
+                        <div className="absolute bottom-4 right-14 bg-[#1c1038]/80 backdrop-blur-sm border border-[#3b1f69]/50 rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-lg z-10">
+                            <div className="flex flex-col items-end">
+                                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Volume (24h)</span>
+                                <span className="text-sm font-bold text-foreground">$1,245,890.00</span>
+                            </div>
+                        </div>
                      </div>
                 </Card>
             </div>
