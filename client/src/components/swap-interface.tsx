@@ -393,6 +393,7 @@ const formatTimeAgo = (timestamp: number) => {
                   />
                   <span className="absolute right-3 text-xs text-muted-foreground">%</span>
                </div>
+               <p className="text-[10px] text-muted-foreground mt-1 text-right">Maximum custom slippage is 80%</p>
              </div>
              
              <Button 
