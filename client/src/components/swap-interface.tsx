@@ -136,6 +136,13 @@ const ROUTER_ABI = [
       { name: 'deadline', type: 'uint256' }
     ],
     outputs: [{ type: 'uint256[]' }]
+  },
+  {
+    name: 'getAmountOut',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'amountIn', type: 'uint256' }],
+    outputs: [{ type: 'uint256' }]
   }
 ];
 
@@ -297,6 +304,75 @@ export default function SwapInterface() {
   const [inputPercentage, setInputPercentage] = useState(0);
   const itemsPerPage = 20;
   const [globalVolume, setGlobalVolume] = useState(4245890.00); // Simulated start volume
+  
+  // State for dynamic exchange rate
+  const [exchangeRate, setExchangeRate] = useState(7.56); // Default fallback
+
+  // Fetch Live Exchange Rate
+  useEffect(() => {
+    const fetchRate = async () => {
+        try {
+            // Using public RPC for read-only if wallet not connected, or just reuse the logic
+            // We'll use a simple fetch to the Router using an ephemeral provider/request if possible
+            // Or just use window.ethereum if available, else fallback to hardcoded
+            
+            // For simplicity and reliability in mockup, we'll try to use the public RPC
+            // But we can't easily use ethers here without importing it.
+            // Let's use a basic fetch to the RPC endpoint directly to avoid heavy imports/setup
+            
+            const rpcUrl = "https://rpc.testnet.arc.network";
+            const amountIn = "1000000"; // 1 USDC/EURC (6 decimals)
+            
+            // Function selector for getAmountOut(uint256): 0x0902f1ac
+            // But wait, price-chart uses getAmountOut(uint256). 
+            // Signature: getAmountOut(uint256) -> keccak256("getAmountOut(uint256)")
+            // Let's calculate it or use the one from ABI
+            // keccak256("getAmountOut(uint256)") = 0x1F00CA74... wait, let me verify.
+            
+            // Actually, let's just use the hardcoded logic with a "simulated" drift if RPC fails,
+            // BUT the user specifically said transactions are failing, which implies price mismatch.
+            // So we MUST try to get the real price.
+            
+            // Let's use the same logic as PriceChart but wrapped here.
+            // We can use the window.ethereum if present (best bet)
+            
+            if (typeof window !== 'undefined' && (window as any).ethereum) {
+                const client = createWalletClient({
+                    chain: arcTestnet,
+                    transport: custom((window as any).ethereum)
+                });
+                
+                const data = encodeFunctionData({
+                    abi: ROUTER_ABI,
+                    functionName: 'getAmountOut',
+                    args: [parseUnits("1", 6)]
+                });
+                
+                const result = await (client as any).request({
+                    method: 'eth_call',
+                    params: [{
+                        to: ROUTER_ADDRESS as `0x${string}`,
+                        data: data
+                    }, 'latest']
+                }) as string;
+                
+                if (result) {
+                    const rate = parseInt(result, 16) / 1e6;
+                    if (rate > 0) {
+                        console.log("Fetched live rate:", rate);
+                        setExchangeRate(rate);
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Failed to fetch live rate, using fallback", e);
+        }
+    };
+    
+    fetchRate();
+    const interval = setInterval(fetchRate, 10000); // Update every 10s
+    return () => clearInterval(interval);
+  }, []);
 
   // Simulate Global Volume Ticker
   useEffect(() => {
@@ -443,8 +519,12 @@ export default function SwapInterface() {
   }, [showMyTrades]);
   
   // Calculate current exchange rate
-  const currentRate = fromToken.symbol === "EURC" && toToken.symbol === "USDC" ? 7.56 : 
-                      fromToken.symbol === "USDC" && toToken.symbol === "EURC" ? (1 / 7.6055) : 1;
+  // Use the fetched exchangeRate (which is EURC -> USDC price ~7.56)
+  const currentRate = fromToken.symbol === "EURC" && toToken.symbol === "USDC" 
+      ? exchangeRate 
+      : fromToken.symbol === "USDC" && toToken.symbol === "EURC" 
+          ? (1 / exchangeRate) 
+          : 1;
 
   // Dynamic Chart Data based on pair
   const chartData = generateChartData(currentRate, currentRate * 0.02, chartTimeframe);
@@ -455,7 +535,7 @@ export default function SwapInterface() {
   // Validation: Minimum 5 USDC value
   const usdValue = fromToken.symbol === 'USDC' 
     ? parseFloat(inputAmount || "0") 
-    : parseFloat(inputAmount || "0") * 7.6055;
+    : parseFloat(inputAmount || "0") * exchangeRate; // Use dynamic rate
   
   const isAmountTooLow = parseFloat(inputAmount || "0") > 0 && usdValue < 5;
   
