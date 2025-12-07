@@ -282,14 +282,23 @@ export default function SwapInterface() {
   const [currentPage, setCurrentPage] = useState(1);
   const [inputPercentage, setInputPercentage] = useState(0);
   const itemsPerPage = 20;
-  const [siteVolume, setSiteVolume] = useState(0);
+  const [userVolume, setUserVolume] = useState(0);
+  const [globalVolume, setGlobalVolume] = useState(4245890.00); // Simulated start volume
 
   // Load saved volume from localStorage
   useEffect(() => {
-      const savedVolume = localStorage.getItem('arc_site_volume');
+      const savedVolume = localStorage.getItem('arc_user_volume');
       if (savedVolume) {
-          setSiteVolume(parseFloat(savedVolume));
+          setUserVolume(parseFloat(savedVolume));
       }
+  }, []);
+
+  // Simulate Global Volume Ticker
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setGlobalVolume(prev => prev + (Math.random() * 500));
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Calculate percentage when input changes
@@ -785,11 +794,11 @@ export default function SwapInterface() {
               // Add to global trades (limited to 40)
               setTrades(prev => [newTrade, ...prev].slice(0, 40));
               
-              // Update Site Volume
+              // Update User Volume
               const tradeValue = parseFloat(newTrade.usdcAmount);
-              setSiteVolume(prev => {
+              setUserVolume(prev => {
                   const newVol = prev + tradeValue;
-                  localStorage.setItem('arc_site_volume', newVol.toString());
+                  localStorage.setItem('arc_user_volume', newVol.toString());
                   return newVol;
               });
 
@@ -1163,8 +1172,8 @@ export default function SwapInterface() {
                             1 {fromToken.symbol} ≈ {currentRate.toFixed(4)} {toToken.symbol}
                          </div>
                          <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                            <span>24h Vol: <span className="text-foreground font-medium">$47.50K</span></span>
-                            <span className="text-xs opacity-60">(updates hourly)</span>
+                            <span>24h Vol: <span className="text-foreground font-medium">${(globalVolume/1000).toFixed(2)}K</span></span>
+                            <span className="text-xs opacity-60">(updates live)</span>
                          </div>
                        </div>
                        <div className="flex bg-[#130b29]/60 rounded-lg p-1 border border-[#3b1f69]/50">
@@ -1270,12 +1279,21 @@ export default function SwapInterface() {
                             <span className="text-4xl font-black tracking-tighter text-muted-foreground">GOJO</span>
                         </div>
 
-                        {/* Volume Indicator Overlay */}
-                        <div className="absolute bottom-4 right-14 bg-[#1c1038]/80 backdrop-blur-sm border border-[#3b1f69]/50 rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-lg z-10">
-                            <div className="flex flex-col items-end">
-                                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Volume (Site)</span>
+                        {/* Volume Indicators Overlay */}
+                        <div className="absolute bottom-4 right-14 flex gap-3 z-10">
+                            {/* Global 24h Volume */}
+                            <div className="bg-[#1c1038]/80 backdrop-blur-sm border border-[#3b1f69]/50 rounded-lg px-3 py-1.5 flex flex-col items-end shadow-lg">
+                                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">24h Vol (Global)</span>
                                 <span className="text-sm font-bold text-foreground">
-                                    ${siteVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    ${globalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+
+                            {/* User Volume */}
+                            <div className="bg-[#1c1038]/80 backdrop-blur-sm border border-[#3b1f69]/50 rounded-lg px-3 py-1.5 flex flex-col items-end shadow-lg">
+                                <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">My Volume</span>
+                                <span className="text-sm font-bold text-foreground text-primary">
+                                    ${userVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                             </div>
                         </div>
