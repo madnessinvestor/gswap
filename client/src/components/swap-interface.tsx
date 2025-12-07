@@ -1062,7 +1062,7 @@ export default function SwapInterface() {
              <div className="w-4 h-4 rounded-full bg-transparent flex items-center justify-center overflow-hidden">
                 <img src={arcSymbol} alt="Arc" className="w-full h-full object-contain" />
              </div>
-             <span className="text-sm font-medium">ARC TESTNET</span>
+             <span className="text-sm font-medium">Arc Testnet</span>
              <ChevronDown className="w-3 h-3 text-muted-foreground opacity-50" />
           </div>
           
