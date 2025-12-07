@@ -586,7 +586,8 @@ export default function SwapInterface() {
     if (!client) return;
 
     try {
-        const spender = fromToken.symbol === "USDC" ? POOL_ADDRESS : ROUTER_ADDRESS;
+        // Always check allowance for POOL_ADDRESS since we are swapping directly with Pool for both directions
+        const spender = POOL_ADDRESS; 
         const encodedAllowance = encodeFunctionData({
             abi: ERC20_ABI,
             functionName: 'allowance',
@@ -750,7 +751,8 @@ export default function SwapInterface() {
       
       setIsApproving(true);
       try {
-          const spender = fromToken.symbol === "USDC" ? POOL_ADDRESS : ROUTER_ADDRESS;
+          // Always approve POOL_ADDRESS
+          const spender = POOL_ADDRESS;
           const amountToApprove = parseUnits(inputAmount, fromToken.decimals);
           const data = encodeFunctionData({
               abi: ERC20_ABI,
@@ -790,42 +792,28 @@ export default function SwapInterface() {
           const amountOutMinVal = parseFloat(outputAmount) * (1 - parseFloat(slippage)/100);
           const amountOutMin = parseUnits(amountOutMinVal.toFixed(toToken.decimals), toToken.decimals);
           
-          let targetAddress: string;
-          let data: string;
-          
+          // BOTH directions now use POOL direct interaction
+          const targetAddress = POOL_ADDRESS;
+          let selector: string;
+
           if (fromToken.symbol === "USDC") {
-              // USDC -> EURC: Use Pool Direct Interaction (Optimized)
-              targetAddress = POOL_ADDRESS;
-              const selector = "0x84b065d3";
-              
-              const encodedParams = encodeAbiParameters(
-                [
-                  { type: 'uint256' },
-                  { type: 'uint256' },
-                  { type: 'address' }
-                ],
-                [amountIn, amountOutMin, account as `0x${string}`]
-              );
-              
-              data = selector + encodedParams.slice(2);
+              // USDC -> EURC
+              selector = "0x84b065d3";
           } else {
-              // EURC -> USDC: Use Router Standard Swap (Legacy/Stable)
-              targetAddress = ROUTER_ADDRESS;
-              const path = [fromToken.address, toToken.address];
-              const deadline = BigInt(Math.floor(Date.now() / 1000) + 60 * 20); // 20 mins
-              
-              data = encodeFunctionData({
-                  abi: ROUTER_ABI,
-                  functionName: 'swapExactTokensForTokens',
-                  args: [
-                      amountIn,
-                      amountOutMin,
-                      path,
-                      account,
-                      deadline
-                  ]
-              });
+              // EURC -> USDC (Fixed to use Pool Direct as requested)
+              selector = "0x99d96739";
           }
+          
+          const encodedParams = encodeAbiParameters(
+            [
+              { type: 'uint256' },
+              { type: 'uint256' },
+              { type: 'address' }
+            ],
+            [amountIn, amountOutMin, account as `0x${string}`]
+          );
+          
+          const data = selector + encodedParams.slice(2);
 
           console.log("Sending Transaction to:", targetAddress);
           console.log("Direction:", fromToken.symbol, "->", toToken.symbol);
