@@ -12,7 +12,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { motion, AnimatePresence } from "framer-motion";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 import { createWalletClient, custom, parseUnits, encodeFunctionData, formatUnits, encodeAbiParameters } from 'viem';
 import logoImage from '@assets/d0bbfa09-77e9-4527-a95a-3ec275fefad8_1765059425973.png';
@@ -1166,10 +1166,11 @@ export default function SwapInterface() {
                           <AreaChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
                             <defs>
                               <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={isPositive ? "#22c55e" : "#ff9f43"} stopOpacity={0.2}/>
-                                <stop offset="95%" stopColor={isPositive ? "#22c55e" : "#ff9f43"} stopOpacity={0}/>
+                                <stop offset="5%" stopColor={isPositive ? "#22c55e" : "#f59e0b"} stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor={isPositive ? "#22c55e" : "#f59e0b"} stopOpacity={0}/>
                               </linearGradient>
                             </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#3b1f69" vertical={true} horizontal={true} opacity={0.2} />
                             <XAxis 
                               dataKey="time" 
                               axisLine={false}
@@ -1199,9 +1200,9 @@ export default function SwapInterface() {
                               formatter={(value: number) => [value.toFixed(4), toToken.symbol]}
                             />
                             <Area 
-                              type="monotone" 
+                              type="stepAfter" 
                               dataKey="price" 
-                              stroke={isPositive ? "#22c55e" : "#ff9f43"} 
+                              stroke={isPositive ? "#22c55e" : "#f59e0b"} 
                               strokeWidth={2}
                               fillOpacity={1} 
                               fill="url(#colorPrice)" 
