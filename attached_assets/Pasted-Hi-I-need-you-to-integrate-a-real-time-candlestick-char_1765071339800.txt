@@ -1,0 +1,168 @@
+Hi! I need you to integrate a real-time candlestick chart into my DEX frontend.
+Here is the EXACT code that must be added, using Lightweight Charts and my ARC Testnet pool contract.
+
+1. Network
+ARC Network Testnet RPC:
+https://rpc-testnet.arc.network/
+
+2. Pool Contract (EURC ↔ USDC)
+0x284C5Afc100ad14a458255075324fA0A9dfd66b1
+
+3. What you must do
+
+Create a real-time candlestick chart
+
+Update price every 5 seconds
+
+Candle timeframe: 1 minute
+
+Use Lightweight Charts (TradingView’s official open-source library)
+
+Fetch price from the contract using a function like:
+
+getAmountOut(amountIn)
+
+
+Convert 1 EURC → USDC or vice-versa
+
+Use this to compute the live price
+
+Display the chart in the frontend as shown below
+
+No TradingView widget — must use Lightweight Charts
+
+4. FULL WORKING CODE (React Component)
+
+Insert this as src/PriceChart.jsx:
+
+import { useEffect, useRef } from "react";
+import { createChart } from "lightweight-charts";
+import { ethers } from "ethers";
+
+export default function PriceChart() {
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    const chart = createChart(chartRef.current, {
+      width: chartRef.current.clientWidth,
+      height: 340,
+      layout: {
+        background: { color: "#ffffff" },
+        textColor: "#333",
+      },
+      grid: {
+        vertLines: { color: "#e5e5e5" },
+        horzLines: { color: "#e5e5e5" },
+      },
+      timeScale: {
+        timeVisible: true,
+        secondsVisible: false,
+      },
+    });
+
+    const candles = chart.addCandlestickSeries({
+      upColor: "#22c55e",
+      downColor: "#ef4444",
+      borderUpColor: "#22c55e",
+      borderDownColor: "#ef4444",
+      wickUpColor: "#22c55e",
+      wickDownColor: "#ef4444",
+    });
+
+    // -------------------------
+    // CONFIGURAÇÕES DA ARC
+    // -------------------------
+    const provider = new ethers.JsonRpcProvider(
+      "https://rpc-testnet.arc.network/"
+    );
+
+    const poolAddress = "0x284C5Afc100ad14a458255075324fA0A9dfd66b1";
+
+    // !!! VOCÊ PRECISA INSERIR A ABI AQUI !!!
+    const ABI = [
+      // Example:
+      // "function getAmountOut(uint256 amountIn) view returns (uint256)"
+    ];
+
+    const pool = new ethers.Contract(poolAddress, ABI, provider);
+
+    async function getPrice() {
+      try {
+        // Calcula preço (1 EURC → USDC)
+        const amountIn = ethers.parseUnits("1", 6);
+        const out = await pool.getAmountOut(amountIn);
+        return Number(out) / 1e6;
+      } catch (e) {
+        console.error("Error reading price:", e);
+        return null;
+      }
+    }
+
+    let candleData = [];
+    let current = null;
+
+    function newCandle(timestamp, price) {
+      return { time: timestamp, open: price, high: price, low: price, close: price };
+    }
+
+    async function tick() {
+      const price = await getPrice();
+      if (!price) return;
+
+      const now = Math.floor(Date.now() / 1000);
+      const minute = Math.floor(now / 60) * 60;
+
+      if (!current) current = newCandle(minute, price);
+
+      if (current.time !== minute) {
+        candleData.push(current);
+        candles.setData(candleData);
+        current = newCandle(minute, price);
+      }
+
+      current.high = Math.max(current.high, price);
+      current.low = Math.min(current.low, price);
+      current.close = price;
+
+      candles.update(current);
+    }
+
+    const interval = setInterval(tick, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div
+      ref={chartRef}
+      style={{
+        width: "100%",
+        height: "340px",
+        marginTop: "10px",
+      }}
+    />
+  );
+}
+
+5. Add to App.jsx
+import PriceChart from "./PriceChart";
+
+function App() {
+  return (
+    <div style={{ padding: "20px" }}>
+      <h3>EURC / USDC (ARC Testnet)</h3>
+      <PriceChart />
+    </div>
+  );
+}
+
+export default App;
+
+6. Install dependencies
+npm install lightweight-charts ethers
+
+7. Done
+
+This must produce a live ARC Testnet candlestick chart.
+
+If you need the ABI of the pool contract, I can extract it.

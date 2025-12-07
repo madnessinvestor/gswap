@@ -1,3 +1,4 @@
+import { Slider } from "@/components/ui/slider";
 import { useState, useEffect, useMemo } from "react";
 import { ArrowDown, ArrowRight, Settings, ChevronDown, Wallet, Info, RefreshCw, ExternalLink, TrendingUp, Activity, AlertCircle, Ghost, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { createWalletClient, custom, parseUnits, encodeFunctionData, formatUnits
 import logoImage from '@assets/d0bbfa09-77e9-4527-a95a-3ec275fefad8_1765059425973.png';
 import arcSymbol from '@assets/download_1765062780027.png';
 import gojoLogo from '@assets/Gojooo_1765068633880.png';
+import PriceChart from "./price-chart";
 // import { arc } from 'viem/chains'; // Removed as we define custom chain
 
 // Define Arc Testnet Custom Chain for Viem
@@ -1162,134 +1164,22 @@ export default function SwapInterface() {
 
             {/* Right Column (Chart) */}
             <div className="lg:col-span-7 order-2 flex flex-col gap-6">
-                <Card className="w-full min-h-[500px] bg-[#1c1038]/90 backdrop-blur-md border-[#3b1f69]/50 shadow-xl rounded-[24px] overflow-hidden flex flex-col">
-                     <div className="p-6 border-b border-[#3b1f69]/30 bg-[#1c1038]/30 flex justify-between items-start">
-                       <div>
-                         <div className="flex items-center gap-3 mb-1">
+                <Card className="w-full min-h-[500px] bg-[#1c1038]/90 backdrop-blur-md border-[#3b1f69]/50 shadow-xl rounded-[24px] overflow-hidden flex flex-col items-center justify-center relative">
+                     {/* TradingView-like Watermark */}
+                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 z-0">
+                         <span className="text-[100px] font-black tracking-tighter text-muted-foreground rotate-[-15deg]">GOJO</span>
+                     </div>
+                     
+                     <div className="w-full h-full z-10 p-4">
+                        <div className="flex items-center gap-3 mb-4 pl-2">
                              <div className="flex items-center -space-x-2">
                                 <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-[#1c1038] flex items-center justify-center text-xs font-bold text-white z-10">{fromToken.icon}</div>
                                 <div className="w-8 h-8 rounded-full bg-yellow-400 border-2 border-[#1c1038] flex items-center justify-center text-xs font-bold text-yellow-900">{toToken.icon}</div>
                              </div>
                              <h2 className="text-xl font-bold text-foreground">{fromToken.symbol} / {toToken.symbol}</h2>
                              <span className="px-2 py-0.5 rounded-md bg-secondary/50 text-xs font-medium text-muted-foreground border border-border/20">Spot</span>
-                         </div>
-                         <div className="flex items-baseline gap-3">
-                           <h2 className="text-4xl font-bold text-foreground tracking-tight">{currentRate.toFixed(4)}</h2>
-                           <span className={`text-lg font-medium ${isPositive ? 'text-green-500' : 'text-red-500'} flex items-center gap-1`}>
-                             {isPositive ? '+' : ''}{priceChangePercent}%
-                           </span>
-                         </div>
-                         <div className="text-sm font-medium text-muted-foreground mt-1 flex items-center gap-2">
-                            <span className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs font-bold tracking-wider">RATE</span>
-                            1 {fromToken.symbol} ≈ {currentRate.toFixed(4)} {toToken.symbol}
-                         </div>
-                         <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-                            <span>24h Vol: <span className="text-foreground font-medium">${(globalVolume/1000).toFixed(2)}K</span></span>
-                            <span className="text-xs opacity-60">(updates live)</span>
-                         </div>
-                       </div>
-                       <div className="flex bg-[#130b29]/60 rounded-lg p-1 border border-[#3b1f69]/50">
-                         {["1H", "1D", "1W", "1M"].map(period => (
-                           <Button 
-                            key={period} 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => setChartTimeframe(period)}
-                            className={`h-8 px-4 rounded-md text-xs font-bold transition-all ${chartTimeframe === period ? 'bg-background shadow-sm text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
-                           >
-                             {period}
-                           </Button>
-                         ))}
-                       </div>
-                     </div>
-                     
-                     <div className="flex-1 w-full min-h-[350px] p-0 relative">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
-                            <defs>
-                              <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor={isPositive ? "#22c55e" : "#f59e0b"} stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor={isPositive ? "#22c55e" : "#f59e0b"} stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#3b1f69" vertical={true} horizontal={true} opacity={0.2} />
-                            <XAxis 
-                              dataKey="time" 
-                              axisLine={false}
-                              tickLine={false}
-                              tick={{ fill: '#6B7280', fontSize: 11 }}
-                              dy={10}
-                              interval={Math.floor(chartData.length / 6)}
-                            />
-                            <YAxis 
-                              domain={['dataMin', 'dataMax']} 
-                              orientation="right"
-                              axisLine={false}
-                              tickLine={false}
-                              tick={{ fill: '#6B7280', fontSize: 11 }}
-                              dx={10}
-                              tickFormatter={(value) => value.toFixed(4)}
-                            />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: '#1c1038', 
-                                border: '1px solid #3b1f69',
-                                borderRadius: '12px',
-                                boxShadow: '0 8px 16px rgba(0,0,0,0.5)'
-                              }}
-                              itemStyle={{ color: '#fff' }}
-                              labelStyle={{ color: '#9CA3AF', marginBottom: '4px' }}
-                              formatter={(value: number) => [value.toFixed(4), toToken.symbol]}
-                            />
-                            <Area 
-                              type="stepAfter" 
-                              dataKey="price" 
-                              stroke={isPositive ? "#22c55e" : "#f59e0b"} 
-                              strokeWidth={2}
-                              fillOpacity={1} 
-                              fill="url(#colorPrice)" 
-                            />
-                            <ReferenceLine 
-                                y={chartData[0]?.price} 
-                                stroke={isPositive ? "#22c55e" : "#f59e0b"} 
-                                strokeDasharray="3 3" 
-                                opacity={0.6}
-                                label={({ viewBox }) => {
-                                    // Custom label with background box
-                                    const y = viewBox.y;
-                                    const x = viewBox.width; // Far right
-                                    const color = isPositive ? "#22c55e" : "#f59e0b";
-                                    return (
-                                        <g>
-                                            <rect 
-                                                x={x - 2} 
-                                                y={y - 10} 
-                                                width={48} 
-                                                height={20} 
-                                                fill={color} 
-                                                rx={2}
-                                            />
-                                            <text 
-                                                x={x + 22} 
-                                                y={y + 4} 
-                                                textAnchor="middle" 
-                                                fill="#fff" 
-                                                fontSize={10} 
-                                                fontWeight="bold"
-                                            >
-                                                {chartData[0]?.price.toFixed(4)}
-                                            </text>
-                                        </g>
-                                    );
-                                }}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                        
-                        {/* TradingView-like Watermark */}
-                        <div className="absolute bottom-4 left-6 pointer-events-none opacity-20">
-                            <span className="text-4xl font-black tracking-tighter text-muted-foreground">GOJO</span>
                         </div>
+                        <PriceChart />
                      </div>
                 </Card>
             </div>
