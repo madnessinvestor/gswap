@@ -12,51 +12,55 @@ export default function PriceChart({ timeframe }: PriceChartProps) {
   const seriesRef = useRef<any>(null); // To store series reference
   const [currentPrice, setCurrentPrice] = useState<string | null>(null);
 
+  // Helper to get interval seconds
+  const getIntervalSeconds = (period: string) => {
+      switch(period) {
+          case '5s': return 5;
+          case '15m': return 15 * 60;
+          case '1H': return 3600;
+          case '1D': return 86400;
+          case '1W': return 604800;
+          case '1M': return 2592000; // 30 days
+          default: return 60;
+      }
+  };
+
   // Function to generate initial data based on timeframe
   const generateInitialData = (basePrice: number, period: string) => {
       const data: any[] = [];
       const now = Math.floor(Date.now() / 1000);
-      let interval = 60; // default 1 minute
-      let count = 100;
+      const interval = getIntervalSeconds(period);
+      
+      // Align the end time to the grid
+      const alignedNow = Math.floor(now / interval) * interval;
 
+      let count = 100;
+      // Adjust history count based on timeframe to fill screen nicely
       switch(period) {
-          case '5s':
-              interval = 5;
-              count = 100; // 500 seconds history
-              break;
-          case '15m':
-              interval = 15 * 60;
-              count = 50;
-              break;
-          case '1H':
-              interval = 3600; 
-              count = 48; // 2 days
-              break;
-          case '1D':
-              interval = 86400; 
-              count = 30; // 1 month
-              break;
-          case '1W':
-              interval = 86400 * 7; 
-              count = 24; // ~6 months
-              break;
-          case '1M':
-              interval = 86400 * 30; 
-              count = 12; // 1 year
-              break;
-          default:
-              interval = 60;
+          case '5s': count = 100; break;
+          case '15m': count = 50; break;
+          case '1H': count = 48; break;
+          case '1D': count = 30; break;
+          case '1W': count = 24; break;
+          case '1M': count = 12; break;
       }
 
       let currentP = basePrice;
+      // Generate history up to the *previous* interval
       for (let i = count; i > 0; i--) {
           // Add some volatility
           currentP += (Math.random() - 0.5) * (basePrice * 0.005); 
           data.push({
-              time: (now - (i * interval)) as Time,
+              time: (alignedNow - (i * interval)) as Time,
               value: currentP
           });
       }
+      // Add current open interval with base price (will be updated by tick immediately)
+      data.push({
+          time: alignedNow as Time,
+          value: currentP
+      });
+
       return data;
   };
 
@@ -76,7 +80,7 @@ export default function PriceChart({ timeframe }: PriceChartProps) {
       height: 400,
       timeScale: {
         timeVisible: true,
-        secondsVisible: true,
+        secondsVisible: timeframe === '5s',
         borderColor: '#3b1f69',
         tickMarkFormatter: (time: number, tickMarkType: any, locale: any) => {
             const date = new Date(time * 1000);
@@ -150,8 +154,12 @@ export default function PriceChart({ timeframe }: PriceChartProps) {
 
       setCurrentPrice(price.toFixed(4));
 
-      const timestamp = Math.floor(Date.now() / 1000) as Time;
-      series.update({ time: timestamp, value: price });
+      const now = Math.floor(Date.now() / 1000);
+      const interval = getIntervalSeconds(timeframe);
+      // Align timestamp to the start of the interval (e.g., 00:00, 00:15, 00:30)
+      const alignedTime = (Math.floor(now / interval) * interval) as Time;
+      
+      series.update({ time: alignedTime, value: price });
     }
 
     // Initial tick
