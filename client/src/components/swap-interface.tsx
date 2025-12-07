@@ -436,7 +436,7 @@ export default function SwapInterface() {
   });
 
   const [myTrades, setMyTrades] = useState<any[]>([]); // Store all user trades
-  const [chartTimeframe, setChartTimeframe] = useState("1D");
+  const [chartTimeframe, setChartTimeframe] = useState("RealTime");
   const [showMyTrades, setShowMyTrades] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [inputPercentage, setInputPercentage] = useState(0);
