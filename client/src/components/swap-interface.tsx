@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ArrowDown, ArrowRight, Settings, ChevronDown, Wallet, Info, RefreshCw, ExternalLink, TrendingUp, Activity, AlertCircle, Ghost, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -282,16 +282,15 @@ export default function SwapInterface() {
   const [currentPage, setCurrentPage] = useState(1);
   const [inputPercentage, setInputPercentage] = useState(0);
   const itemsPerPage = 20;
-  const [userVolume, setUserVolume] = useState(0);
+  // const [userVolume, setUserVolume] = useState(0); // Removed in favor of derived value
   const [globalVolume, setGlobalVolume] = useState(4245890.00); // Simulated start volume
 
-  // Load saved volume from localStorage
-  useEffect(() => {
-      const savedVolume = localStorage.getItem('arc_user_volume');
-      if (savedVolume) {
-          setUserVolume(parseFloat(savedVolume));
-      }
-  }, []);
+  // Calculate User Volume based on My Trades (Mock + Real)
+  const userVolume = useMemo(() => {
+      return myTrades.reduce((total, trade) => {
+          return total + (parseFloat(trade.usdcAmount) || 0);
+      }, 0);
+  }, [myTrades]);
 
   // Simulate Global Volume Ticker
   useEffect(() => {
@@ -794,13 +793,7 @@ export default function SwapInterface() {
               // Add to global trades (limited to 40)
               setTrades(prev => [newTrade, ...prev].slice(0, 40));
               
-              // Update User Volume
-              const tradeValue = parseFloat(newTrade.usdcAmount);
-              setUserVolume(prev => {
-                  const newVol = prev + tradeValue;
-                  localStorage.setItem('arc_user_volume', newVol.toString());
-                  return newVol;
-              });
+              // User Volume updates automatically via myTrades dependency
 
               // Add to my trades (unlimited for session, filtered by account view)
               setMyTrades(prev => {
